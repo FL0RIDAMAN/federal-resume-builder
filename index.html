@@ -1,0 +1,1207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Federal Resume Builder</title>
+<meta name="description" content="Answer simple questions and get a two-page USAJOBS federal resume as a PDF, checked against the current rules.">
+<meta property="og:title" content="Federal Resume Builder">
+<meta property="og:description" content="Answer simple questions and get a two-page USAJOBS federal resume as a PDF, checked against the current rules.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2F4F8; --surface:#FFFFFF; --field:#FFFFFF; --ink:#14213D; --ink-2:#4B5A75;
+  --rule:#CFD7E3; --rule-2:#E5E9F0; --signal:#2A55C4; --signal-ink:#FFFFFF; --signal-soft:#E8EEFB;
+  --go:#1B7449; --go-soft:#E1F2E8; --hold:#AD4511; --hold-soft:#FBE9DD; --note:#7E5B00; --note-soft:#FAF0D4;
+  --shadow:0 1px 2px rgba(20,33,61,.10),0 10px 28px rgba(20,33,61,.10);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1422; --surface:#132037; --field:#0F1A2D; --ink:#E4EAF4; --ink-2:#9CADC8;
+    --rule:#2A3955; --rule-2:#1C2942; --signal:#82A5FF; --signal-ink:#0C1422; --signal-soft:#1A2948;
+    --go:#56C893; --go-soft:#11301F; --hold:#FF9B5E; --hold-soft:#3A2113; --note:#E8C25A; --note-soft:#33290E;
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1422; --surface:#132037; --field:#0F1A2D; --ink:#E4EAF4; --ink-2:#9CADC8;
+  --rule:#2A3955; --rule-2:#1C2942; --signal:#82A5FF; --signal-ink:#0C1422; --signal-soft:#1A2948;
+  --go:#56C893; --go-soft:#11301F; --hold:#FF9B5E; --hold-soft:#3A2113; --note:#E8C25A; --note-soft:#33290E;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+h2,h3{margin:0}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Masthead */
+.masthead{max-width:1280px;margin:0 auto;padding:28px 24px 10px;display:flex;gap:12px 24px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.masthead h1{margin:0;font-size:clamp(1.55rem,1.1rem + 1.6vw,2.15rem);font-weight:800;letter-spacing:-0.02em;line-height:1.1}
+.masthead p{margin:6px 0 0;color:var(--ink-2);max-width:60ch}
+.savestate{font-size:.875rem;color:var(--ink-2);margin:0}
+.savestate.warn{color:var(--hold);font-weight:600}
+
+/* Step rail */
+.rail{max-width:1280px;margin:0 auto;padding:6px 24px 18px;overflow-x:auto;scrollbar-width:thin}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;gap:2px;min-width:max-content;border-bottom:1px solid var(--rule)}
+.rail button{display:flex;align-items:center;gap:8px;background:none;border:0;padding:10px 12px 12px;cursor:pointer;color:var(--ink-2);font-weight:500;font-size:.9375rem;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.rail button:hover{color:var(--ink)}
+.rail button[aria-current="step"]{color:var(--ink);border-bottom-color:var(--signal);font-weight:650}
+.rail .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid currentColor;font-size:.8125rem;font-weight:700;font-variant-numeric:tabular-nums}
+.rail .done .num{background:var(--go);border-color:var(--go);color:var(--surface)}
+
+/* Layout */
+.layout{max-width:1280px;margin:0 auto;padding:4px 24px 120px;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,470px);gap:44px;align-items:start}
+.formcol{min-width:0;max-width:680px}
+.previewcol{position:sticky;top:calc(12px + env(safe-area-inset-top,0px));max-height:calc(100vh - 24px - env(safe-area-inset-top,0px));overflow:auto;padding:4px 8px 24px}
+
+/* Step content */
+.step h2{font-size:1.6rem;font-weight:800;letter-spacing:-0.015em;line-height:1.2}
+.step h3{font-size:1.125rem;font-weight:700;margin:28px 0 10px}
+.lede{color:var(--ink-2);margin:6px 0 26px;max-width:62ch}
+.field{margin:0 0 20px;min-width:0}
+.field>label,.q{display:block;font-weight:600;margin:0 0 4px}
+.hint{margin:0 0 8px;color:var(--ink-2);font-size:.875rem;max-width:62ch}
+.hint.good{color:var(--go);font-weight:600}
+input[type=text],input[type=email],input[type=tel],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--field);font-size:16px;line-height:1.4;min-height:44px}
+textarea{resize:vertical;min-height:84px;display:block}
+select{appearance:auto;min-width:0;max-width:100%}
+.entries>*{min-width:0}
+input::placeholder,textarea::placeholder{color:var(--ink-2);opacity:.7}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:0 12px}
+.row>*{min-width:0}
+.row3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:8px}
+.row3 label{display:block;font-size:.8125rem;color:var(--ink-2);margin-bottom:2px}
+.narrow{max-width:220px}
+.check{display:flex;gap:10px;align-items:center;font-weight:500;margin:-6px 0 20px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--signal);flex:none}
+fieldset.fs{border:0;padding:0;margin:0 0 20px;min-width:0}
+fieldset.fs legend{padding:0;float:left;width:100%}
+fieldset.fs legend + *{clear:both}
+fieldset[disabled]{opacity:.5}
+.my{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;clear:both}
+.count{margin:-12px 0 20px;font-size:.875rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.note{border-left:3px solid var(--signal);padding:12px 16px;background:var(--surface);border-radius:0 8px 8px 0;margin:4px 0 24px;font-size:.9375rem;max-width:62ch}
+.note strong{display:block;margin-bottom:2px}
+
+/* Entries */
+.entries{display:flex;flex-direction:column;gap:12px;margin:0 0 16px}
+.entry{background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+.entry>summary{list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px;cursor:pointer;border-radius:10px}
+.entry>summary::-webkit-details-marker{display:none}
+.entry-num{width:28px;height:28px;border-radius:6px;background:var(--rule-2);display:grid;place-items:center;font-weight:700;font-variant-numeric:tabular-nums;font-size:.9375rem}
+.entry-title{font-weight:650;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry-title small{display:block;font-weight:400;color:var(--ink-2);font-size:.875rem;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:.8125rem;font-weight:650;padding:3px 9px;border-radius:999px;white-space:nowrap;color:var(--ink-2)}
+.tag.go{background:var(--go-soft);color:var(--go)}
+.tag.hold{background:var(--hold-soft);color:var(--hold)}
+.entry-body{padding:18px 16px 16px;border-top:1px solid var(--rule-2)}
+.entry.flat{padding:16px 16px 4px}
+.entry-tools{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--rule-2);padding-top:14px;margin-top:6px}
+.entry.flat .entry-tools{border:0;padding-top:0;margin:-6px 0 12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.kindhint{margin:-12px 0 20px}
+details.optional{margin:0 0 20px;border:1px dashed var(--rule);border-radius:8px;padding:10px 14px}
+details.optional>summary{cursor:pointer;font-weight:600;color:var(--ink-2)}
+details.optional[open]>summary{margin-bottom:14px}
+
+/* Bullets */
+.prompts{margin:0 0 14px;padding:12px 16px 12px 34px;background:var(--signal-soft);border-radius:8px;font-size:.9375rem}
+.prompts li{margin:3px 0}
+.bullet-row{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px 8px;margin-bottom:10px}
+.bullet-mark{padding-top:10px;color:var(--ink-2);font-weight:800;line-height:1.4}
+.bullet-row textarea{min-height:68px}
+.bullet-tools{grid-column:2;justify-self:end;display:flex;gap:6px}
+.iconbtn{width:36px;height:34px;border-radius:7px;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:1rem;line-height:1;display:inline-grid;place-items:center}
+.iconbtn:hover:not([disabled]){background:var(--rule-2)}
+.iconbtn[disabled]{opacity:.35;cursor:default}
+details.builder{margin:6px 0 0;border-top:1px solid var(--rule-2);padding-top:12px}
+details.builder>summary{cursor:pointer;font-weight:600;color:var(--signal)}
+details.builder[open]>summary{margin-bottom:10px}
+.builder .field{margin-bottom:12px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;padding:10px 16px;font-weight:650;border:1px solid transparent;cursor:pointer;min-height:44px;text-decoration:none;background:none}
+.btn.primary{background:var(--signal);color:var(--signal-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.quiet{border-color:var(--rule);background:var(--surface)}
+.btn.quiet:hover{background:var(--rule-2)}
+.btn.small{min-height:36px;padding:6px 12px;font-size:.9375rem}
+.btn.danger{color:var(--hold)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--signal);font-weight:650;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:34px;padding-top:20px;border-top:1px solid var(--rule)}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px;padding:0;list-style:none}
+.chip{display:inline-flex;align-items:center;gap:2px;padding:4px 10px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);font-size:.875rem;line-height:1.4}
+.chip.used{background:var(--go-soft);border-color:transparent;color:var(--go)}
+.chip.used::before{content:"✓";margin-right:4px;font-weight:700}
+.chip button{border:0;background:none;cursor:pointer;width:22px;height:22px;margin:-2px -6px -2px 2px;border-radius:50%;color:inherit;opacity:.7;font-size:1rem;line-height:1}
+.chip button:hover{opacity:1;background:var(--rule-2)}
+.chips .empty{color:var(--ink-2);font-size:.875rem}
+.kwadd{display:flex;gap:8px;max-width:420px}
+.kwbar{margin:0 0 22px;padding:14px 16px;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+.kwbar .q{font-size:.9375rem}
+.kwbar .chips{margin-bottom:0}
+.kwbar .hint{margin:0}
+
+/* Go / No-go */
+.verdict{border-radius:12px;padding:22px 24px;margin:0 0 26px}
+.verdict.go{background:var(--go-soft)}
+.verdict.hold{background:var(--hold-soft)}
+.verdict .call{font-size:3rem;font-weight:800;letter-spacing:.03em;line-height:1}
+.verdict.go .call{color:var(--go)}
+.verdict.hold .call{color:var(--hold)}
+.verdict p{margin:10px 0 0;font-size:1.0625rem}
+.poll{list-style:none;margin:0 0 10px;padding:0}
+.poll-row{display:grid;grid-template-columns:auto minmax(24px,1fr) auto;align-items:baseline;gap:0 10px;padding:11px 0;border-bottom:1px solid var(--rule-2)}
+.poll-label{font-weight:600}
+.poll-leader{border-bottom:2px dotted var(--rule);transform:translateY(-4px)}
+.poll-call{font-weight:800;letter-spacing:.07em;font-size:.9375rem}
+.is-go .poll-call{color:var(--go)}
+.is-hold .poll-call{color:var(--hold)}
+.is-note .poll-call{color:var(--note)}
+.poll-detail{grid-column:1/-1;margin:6px 0 0;padding-left:20px;color:var(--ink-2);font-size:.9375rem}
+.poll-detail li{margin:2px 0}
+.poll-fix{grid-column:1/-1;justify-self:start;margin-top:4px}
+.block{margin:30px 0 0;padding-top:4px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+details.section{border-top:1px solid var(--rule);margin-top:30px;padding:16px 0 0}
+details.section>summary{font-weight:700;font-size:1.125rem;cursor:pointer}
+details.section[open]>summary{margin-bottom:10px}
+.copyblock{margin:14px 0}
+.copyhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-weight:600}
+.copyblock textarea{font-size:.875rem;min-height:130px}
+.fix{border:1px solid var(--rule);border-radius:8px;padding:12px 14px;margin:10px 0;background:var(--surface)}
+.fix p{margin:0 0 8px}
+.fix del{color:var(--ink-2);text-decoration-color:var(--hold);text-decoration-thickness:2px}
+.fix ins{text-decoration:none;background:var(--go-soft);color:var(--go);font-weight:600;border-radius:3px;padding:0 2px}
+.fix .why{font-size:.875rem;color:var(--ink-2)}
+.list{margin:6px 0 0;padding-left:20px;max-width:62ch}
+.list li{margin:4px 0}
+
+/* Preview */
+.meter{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:16px}
+.meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.9375rem}
+.meter-top strong{font-variant-numeric:tabular-nums}
+.meter.over .meter-top strong{color:var(--hold)}
+.meter-bar{position:relative;height:8px;border-radius:4px;background:var(--rule-2);margin-top:8px;overflow:hidden}
+.meter-bar span{position:absolute;top:0;bottom:0;left:0;background:var(--go);border-radius:4px}
+.meter.over .meter-bar span{background:var(--hold)}
+.meter-bar i{position:absolute;top:0;bottom:0;width:2px;left:50%;background:var(--surface)}
+.meter small{display:block;color:var(--ink-2);font-size:.8125rem;margin-top:6px}
+.page{background:#fff;box-shadow:var(--shadow);margin:0 0 14px;border-radius:2px}
+.page svg{display:block;width:100%;height:auto}
+.page.over{outline:3px solid var(--hold);outline-offset:3px}
+.page-label{font-size:.8125rem;color:var(--ink-2);margin:0 0 6px;font-variant-numeric:tabular-nums}
+.page-label.over{color:var(--hold);font-weight:700}
+.loading{color:var(--ink-2)}
+
+/* Mobile */
+.mobilebar{display:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-weight:550;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);z-index:20;text-align:center}
+.toast.show{opacity:1}
+@media (max-width:959px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:0;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .previewcol{display:none;position:static;max-height:none;overflow:visible;padding:0}
+  body.show-preview .previewcol{display:block}
+  body.show-preview .formcol{display:none}
+  .mobilebar{display:flex;position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--rule);z-index:10}
+  .mobilebar .btn{flex:1}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:520px){
+  .masthead{padding:20px 16px 8px}
+  .rail{padding:6px 16px 14px}
+  .layout{padding-left:16px;padding-right:16px}
+  .entry-body{padding:16px 12px 14px}
+  .entry>summary{padding:12px}
+  .row3{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div>
+    <h1>Federal resume builder</h1>
+    <p>Answer the questions and it formats a two-page USAJOBS resume, checks it against the rules, and gives you a PDF.</p>
+  </div>
+  <p class="savestate" id="savestate" aria-live="polite"></p>
+</header>
+<nav class="rail" aria-label="Steps"><ol id="rail"></ol></nav>
+<main class="layout">
+  <section class="formcol" id="form"></section>
+  <aside class="previewcol" id="previewcol" aria-label="Resume preview">
+    <div class="meter" id="meter"></div>
+    <div id="pages"><p class="loading">Loading preview…</p></div>
+  </aside>
+</main>
+<div class="mobilebar"><button type="button" class="btn quiet" data-act="togglePreview" id="previewToggle">Show preview</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ---------- basics ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const KEY = 'fedresume:v1';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const NOW = new Date();
+const NOW_YM = NOW.getFullYear() * 12 + NOW.getMonth();
+const YEARS = []; for (let y = NOW.getFullYear() + 6; y >= NOW.getFullYear() - 60; y--) YEARS.push(String(y));
+const ym = (m, y) => (+y) * 12 + (+m - 1);
+const STEPS = [
+  {label:'The job'}, {label:'Contact'}, {label:'Summary'}, {label:'Experience'},
+  {label:'Education'}, {label:'Certifications'}, {label:'Skills and extras'}, {label:'Go / No-go'}
+];
+const REVIEW = 7;
+
+const blankJob = () => ({id:uid(), kind:'civilian', title:'', rank:'', employer:'', city:'', state:'', payPlan:'GS', series:'', grade:'', startM:'', startY:'', endM:'', endY:'', current:false, hours:'', salary:'', salaryBasis:'per year', supName:'', supPhone:'', supContact:'', bullets:['']});
+const blankEdu = () => ({id:uid(), school:'', city:'', state:'', degree:'', major:'', compM:'', compY:'', expected:false, gpa:'', gpaScale:'4.0', coursework:''});
+const blankCert = () => ({id:uid(), name:'', issuer:'', issM:'', issY:'', expM:'', expY:''});
+const blankTrain = () => ({id:uid(), name:'', provider:'', compM:'', compY:'', hours:''});
+const blankState = () => ({
+  v:1, step:0,
+  target:{title:'', seriesGrade:'', announcement:'', reqText:'', kwAdded:[], kwRemoved:[]},
+  contact:{name:'', email:'', phone:'', city:'', state:'', citizen:'', vet:'', clearance:'', status:''},
+  summary:'', jobs:[blankJob()], edu:[blankEdu()], certs:[], training:[],
+  skills:'', languages:'', awards:'', pubs:'', additional:'',
+  opts:{eduFirst:false}
+});
+
+function merge(def, src){
+  if (Array.isArray(def)) return Array.isArray(src) ? src : def;
+  if (def && typeof def === 'object'){
+    const out = {};
+    for (const k of Object.keys(def)) out[k] = (src && typeof src === 'object' && k in src) ? merge(def[k], src[k]) : def[k];
+    return out;
+  }
+  if (typeof def === 'string' && typeof src === 'number') return String(src);
+  return (src === undefined || src === null || typeof src !== typeof def) ? def : src;
+}
+function normalize(o){
+  const s = merge(blankState(), o);
+  const strs = a => a.filter(x => typeof x === 'string');
+  s.jobs = s.jobs.filter(x => x && typeof x === 'object').map(j => {
+    const m = merge(blankJob(), j);
+    m.bullets = Array.isArray(m.bullets) ? m.bullets.map(b => String(b == null ? '' : b)) : [''];
+    if (!m.bullets.length) m.bullets = [''];
+    return m;
+  });
+  if (!s.jobs.length) s.jobs = [blankJob()];
+  s.edu = s.edu.filter(x => x && typeof x === 'object').map(e => merge(blankEdu(), e));
+  s.certs = s.certs.filter(x => x && typeof x === 'object').map(e => merge(blankCert(), e));
+  s.training = s.training.filter(x => x && typeof x === 'object').map(e => merge(blankTrain(), e));
+  s.target.kwAdded = strs(s.target.kwAdded);
+  s.target.kwRemoved = strs(s.target.kwRemoved);
+  if (!(s.step >= 0 && s.step < STEPS.length)) s.step = 0;
+  return s;
+}
+
+/* ---------- storage ---------- */
+let storageOk = true;
+function load(){
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { storageOk = false; }
+  if (!raw) return blankState();
+  try { return normalize(JSON.parse(raw)); } catch (e) { return blankState(); }
+}
+let state = load();
+const ui = {open:{}, builder:{}, opt:{}, proof:null};
+let saveTimer = null;
+function setSave(msg, warn){ const el = $('#savestate'); el.textContent = msg; el.classList.toggle('warn', !!warn); }
+function saveNow(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; setSave('Saved in this browser'); }
+  catch (e) { storageOk = false; setSave('Not saving here. Save a backup file on the last step.', true); }
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 350); }
+
+/* ---------- capabilities ---------- */
+const cap = name => (window.claude && typeof window.claude.use === 'function') ? window.claude.use(name).catch(() => null) : Promise.resolve(null);
+const inViewer = !!(window.claude && typeof window.claude.use === 'function');
+let dl = null, dlState = inViewer ? 'pending' : 'native', sampler = null, spState = inViewer ? 'pending' : 'none';
+if (inViewer){
+  cap('downloads').then(d => { dl = d; dlState = d ? 'ready' : 'none'; if (state.step === REVIEW) renderStep(); });
+  cap('sample').then(s => { sampler = s; spState = s ? 'ready' : 'none'; if (state.step === REVIEW) renderStep(); });
+}
+function nativeSave(filename, data){
+  const type = /\.pdf$/.test(filename) ? 'application/pdf' : /\.json$/.test(filename) ? 'application/json' : 'text/plain;charset=utf-8';
+  const blob = data instanceof Blob ? data : new Blob([data], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('Downloaded ' + filename);
+}
+
+/* ---------- text cleaning (PDF standard fonts print Latin-1 + WinAnsi) ---------- */
+const WIN = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ');
+const MAP = {'\u2010':'-','\u2011':'-','\u2012':'-','\u2015':'—','\u2212':'-','\u2264':'<=','\u2265':'>=','\u2192':'->','\u2190':'<-','\u00A0':' ','\u2009':' ','\u202F':' ','\u2007':' ','\u2002':' ','\u2003':' ','\u200B':'','\u200C':'','\u200D':'','\uFEFF':'','\uFE0F':'','\uFE0E':'','\u25CF':'•','\u25AA':'•','\u2023':'•','\u2043':'-','\u2044':'/','\u2032':"'",'\u2033':'"'};
+function clean(s, bad){
+  s = String(s == null ? '' : s).normalize('NFC').replace(/[\r\n\t]+/g, ' ');
+  let out = '';
+  for (const ch of s){
+    if (MAP[ch] !== undefined){ out += MAP[ch]; continue; }
+    const code = ch.codePointAt(0);
+    if ((code >= 0x20 && code <= 0x7E) || (code >= 0xA0 && code <= 0xFF) || WIN.has(ch)){ out += ch; continue; }
+    if (code < 0x20 || code === 0x7F) continue;
+    if (bad) bad.add(ch);
+  }
+  return out.replace(/ {2,}/g, ' ').trim();
+}
+const joinNE = (sep, ...parts) => parts.filter(Boolean).join(sep);
+const lines = s => String(s || '').split(/\n+/);
+const paras = s => String(s || '').split(/\n\s*\n/);
+const bulletText = b => { b = b.replace(/^[\s•\-*–—·>]+/, '').trim(); if (b && !/[.!?]$/.test(b)) b += '.'; return b; };
+const digits = s => String(s || '').replace(/\D/g, '');
+const fmtPhone = s => { const d = digits(s), t = String(s || '').trim(); if (/[a-z]/i.test(t)) return t; const n = d.length === 11 && d[0] === '1' ? d.slice(1) : d; return n.length === 10 ? '(' + n.slice(0, 3) + ') ' + n.slice(3, 6) + '-' + n.slice(6) : t; };
+const words = s => (String(s || '').trim().match(/\S+/g) || []).length;
+
+/* ---------- field logic ---------- */
+const jobEmpty = j => !(j.title.trim() || j.employer.trim() || j.startY || j.hours.trim() || j.bullets.some(b => b.trim()));
+const eduEmpty = e => !(e.school.trim() || e.degree.trim() || e.major.trim() || e.compY);
+function seriesGrade(j){
+  let ser = j.series.trim(); if (/^\d{3}$/.test(ser)) ser = '0' + ser;
+  return joinNE('-', j.payPlan.trim().toUpperCase(), ser, j.grade.trim().toUpperCase());
+}
+function jobProblems(j){
+  const p = [];
+  if (!j.title.trim()) p.push('add the job title');
+  if (!j.employer.trim()) p.push(j.kind === 'military' ? 'add the branch and unit' : 'add the employer');
+  const hasStart = j.startM && j.startY, hasEnd = j.endM && j.endY;
+  if (!hasStart) p.push('add the start month and year');
+  if (!j.current && !hasEnd) p.push('add the end month and year, or check "I still work here"');
+  if (hasStart && ym(j.startM, j.startY) > NOW_YM) p.push('the start date is in the future');
+  if (hasStart && hasEnd && !j.current && ym(j.endM, j.endY) < ym(j.startM, j.startY)) p.push('the end date is before the start date');
+  if (hasEnd && !j.current && ym(j.endM, j.endY) > NOW_YM) p.push('the end date is in the future (check "I still work here" instead)');
+  const h = j.hours.trim();
+  if (!h) p.push('add hours per week');
+  else if (!/^\d{1,3}(\.\d+)?$/.test(h) || +h < 1 || +h > 168) p.push('hours per week should be a number from 1 to 168');
+  if (j.kind === 'federal'){
+    if (!/^[A-Za-z]{2}$/.test(j.payPlan.trim())) p.push('add the 2-letter pay plan (for example GS)');
+    if (!/^\d{3,4}$/.test(j.series.trim())) p.push('add the 4-digit series (for example 0861)');
+    if (!/^(\d{1,2}|[IVX]{1,4})$/i.test(j.grade.trim())) p.push('add the grade (for example 12)');
+  }
+  if (!j.bullets.some(b => b.trim())) p.push('add at least one accomplishment');
+  return p;
+}
+function eduProblems(e){
+  const p = [];
+  if (!e.school.trim()) p.push('add the school name');
+  if (!e.degree.trim()) p.push('add the degree type');
+  const has = e.compM && e.compY;
+  if (!has) p.push('add the completion month and year');
+  if (has && !e.expected && ym(e.compM, e.compY) > NOW_YM) p.push('the completion date is in the future (check "Not finished yet")');
+  const g = e.gpa.trim();
+  if (g){
+    const sc = parseFloat(e.gpaScale) || 4;
+    if (!/^\d(\.\d{1,3})?$/.test(g) || +g > sc) p.push('check the GPA (a number like 3.6, no higher than the scale)');
+  }
+  return p;
+}
+function cmpJobs(a, b){
+  const end = j => j.current ? Infinity : (j.endM && j.endY ? ym(j.endM, j.endY) : -Infinity);
+  const st = j => j.startM && j.startY ? ym(j.startM, j.startY) : -Infinity;
+  return (end(b) - end(a)) || (st(b) - st(a));
+}
+function fmtSalary(s){
+  const n = parseFloat(String(s).replace(/[$,\s]/g, ''));
+  if (!isFinite(n) || !/^\$?\s*[\d,]+(\.\d+)?$/.test(String(s).trim())) return s;
+  return '$' + n.toLocaleString('en-US', {maximumFractionDigits: 2});
+}
+const KIND_HINT = {
+  federal: 'Federal civilian jobs must show pay plan, series, and grade. You will find them on your SF-50 (blocks 16 to 18).',
+  military: 'Active-duty service is not federal civilian experience, so it has no series or grade. Describe your duties in plain, civilian terms.',
+  contractor: 'Contractor work is not federal experience. List the company that employed you, and name the agency you supported in your lines.',
+  volunteer: 'Volunteer work counts when it shows you can do this job. Give your real average hours per week.'
+};
+
+/* ---------- content model (shared by PDF, preview, and text) ---------- */
+function model(st, C){
+  const c = st.contact, t = st.target;
+  const head = {name: C(c.name), lines: []};
+  head.lines.push(joinNE(' | ', joinNE(', ', C(c.city), C(c.state)), C(c.email), C(fmtPhone(c.phone))));
+  head.lines.push(joinNE(' | ', c.citizen === 'yes' ? 'U.S. Citizen' : '', C(c.vet) ? "Veterans' preference: " + C(c.vet) : '', C(c.clearance) ? 'Security clearance: ' + C(c.clearance) : '', C(c.status)));
+  const tp = joinNE(', ', C(t.title), C(t.seriesGrade)), an = C(t.announcement);
+  if (tp || an) head.lines.push('Applying for: ' + joinNE(' | ', tp, an ? 'Announcement ' + an : ''));
+  head.lines = head.lines.filter(Boolean);
+
+  const secs = [];
+  const sum = paras(st.summary).map(C).filter(Boolean);
+  if (sum.length) secs.push({title:'Summary', items: sum.map(text => ({k:'para', text}))});
+
+  const exp = {title:'Work Experience', items: st.jobs.filter(j => !jobEmpty(j)).map(j => {
+    let title = C(j.title) || 'Job title';
+    if (j.kind === 'military' && C(j.rank)) title += ' (' + C(j.rank) + ')';
+    if (j.kind === 'federal' && seriesGrade(j)) title += ', ' + seriesGrade(j);
+    if (j.kind === 'volunteer' && !/volunteer/i.test(title)) title += ' (Volunteer)';
+    const emp = joinNE(', ', C(j.employer), C(j.city), C(j.state));
+    const start = j.startM && j.startY ? j.startM + '/' + j.startY : '';
+    const end = j.current ? 'Present' : (j.endM && j.endY ? j.endM + '/' + j.endY : '');
+    const dates = start || end ? joinNE(' – ', start, end) : '';
+    const hrs = C(j.hours) ? C(j.hours) + ' hours per week' : '';
+    const sal = C(j.salary) ? 'Salary: ' + fmtSalary(C(j.salary)) + ' ' + j.salaryBasis : '';
+    const contact = {yes:'; may contact', ask:'; contact me first', no:'; do not contact'}[j.supContact] || '';
+    const sup = C(j.supName) ? 'Supervisor: ' + joinNE(', ', C(j.supName), C(fmtPhone(j.supPhone))) + contact : '';
+    return {k:'entry', title, lines:[emp, joinNE(' | ', dates, hrs, sal), sup].filter(Boolean), bullets: j.bullets.map(b => bulletText(C(b))).filter(Boolean)};
+  })};
+  const edu = {title:'Education', items: st.edu.filter(e => !eduEmpty(e)).map(e => {
+    const deg = joinNE(', ', C(e.degree), C(e.major)) || 'Degree';
+    const when = e.compM && e.compY ? (e.expected ? 'Expected ' : 'Completed ') + e.compM + '/' + e.compY : '';
+    const gpa = C(e.gpa) ? 'GPA ' + C(e.gpa) + (C(e.gpaScale) ? '/' + C(e.gpaScale) : '') : '';
+    const meta = joinNE(' | ', joinNE(', ', C(e.school), C(e.city), C(e.state)), when, gpa);
+    return {k:'entry', title:deg, lines:[meta, C(e.coursework) ? 'Relevant coursework: ' + C(e.coursework) : ''].filter(Boolean), bullets:[]};
+  })};
+  const order = st.opts.eduFirst ? [edu, exp] : [exp, edu];
+  order.forEach(s => { if (s.items.length) secs.push(s); });
+
+  const certs = st.certs.filter(x => C(x.name)).map(x => {
+    const d = joinNE('; ', x.issM && x.issY ? 'issued ' + x.issM + '/' + x.issY : '', x.expM && x.expY ? 'expires ' + x.expM + '/' + x.expY : '');
+    return {k:'bullet', text: joinNE(', ', C(x.name), C(x.issuer)) + (d ? ' (' + d + ')' : '')};
+  });
+  if (certs.length) secs.push({title:'Certifications and Licenses', items: certs});
+  const tr = st.training.filter(x => C(x.name)).map(x => {
+    const d = joinNE('; ', x.compM && x.compY ? 'completed ' + x.compM + '/' + x.compY : '', C(x.hours) ? C(x.hours) + ' hours' : '');
+    return {k:'bullet', text: joinNE(', ', C(x.name), C(x.provider)) + (d ? ' (' + d + ')' : '')};
+  });
+  if (tr.length) secs.push({title:'Training', items: tr});
+  const listSec = (title, src, k) => { const it = lines(src).map(C).filter(Boolean).map(text => ({k, text})); if (it.length) secs.push({title, items: it}); };
+  listSec('Skills', st.skills, 'para');
+  listSec('Languages', st.languages, 'para');
+  listSec('Awards and Honors', st.awards, 'bullet');
+  listSec('Publications and Presentations', st.pubs, 'bullet');
+  const add = paras(st.additional).map(C).filter(Boolean);
+  if (add.length) secs.push({title:'Additional Information', items: add.map(text => ({k:'para', text}))});
+  return {head, secs};
+}
+
+/* ---------- measuring + layout (exact page count; PDF and preview use the same ops) ---------- */
+const JS = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+let mdoc = null, ctx2d = null;
+if (JS){ try { mdoc = new JS({unit:'pt', format:'letter'}); } catch (e) { mdoc = null; } }
+const mcache = new Map();
+function measure(str, size, bold){
+  const key = (bold ? 'b' : 'n') + size + '|' + str;
+  let w = mcache.get(key);
+  if (w !== undefined) return w;
+  if (mdoc){ mdoc.setFont('helvetica', bold ? 'bold' : 'normal'); w = mdoc.getStringUnitWidth(str) * size; }
+  else {
+    if (!ctx2d) ctx2d = document.createElement('canvas').getContext('2d');
+    ctx2d.font = (bold ? '700 ' : '400 ') + size + 'px Helvetica, Arial, sans-serif';
+    w = ctx2d.measureText(str).width;
+  }
+  if (mcache.size > 20000) mcache.clear();
+  mcache.set(key, w);
+  return w;
+}
+function wrap(str, size, bold, maxW){
+  const ws = str.split(' ').filter(Boolean), out = [];
+  let line = '';
+  for (const w of ws){
+    const test = line ? line + ' ' + w : w;
+    if (measure(test, size, bold) <= maxW){ line = test; continue; }
+    if (line){ out.push(line); line = ''; }
+    if (measure(w, size, bold) <= maxW){ line = w; continue; }
+    let chunk = '';
+    for (const ch of w){
+      if (chunk && measure(chunk + ch, size, bold) > maxW){ out.push(chunk); chunk = ch; } else chunk += ch;
+    }
+    line = chunk;
+  }
+  if (line) out.push(line);
+  return out;
+}
+const PW = 612, PH = 792, M = 36, CW = PW - 2 * M, FOOT = 14, BOT = PH - M - FOOT;
+const SZ = {name:14, head:11, body:10, foot:8};
+const LD = {name:18, head:14, body:12.5};
+
+function layout(st){
+  const bad = new Set();
+  const C = s => clean(s, bad);
+  const mdl = model(st, C);
+  const pages = [[]];
+  let ops = pages[0], y = M;
+  const newPage = () => { ops = []; pages.push(ops); y = M; };
+  const room = h => { if (y + h > BOT + 0.01 && y > M) newPage(); };
+  const put = (str, x, size, bold, lead) => { const w = measure(str, size, bold); ops.push({t:'text', str, x, y: y + (lead - size) / 2 + size * 0.8, size, bold, w}); };
+  const para = (text, o) => {
+    o = o || {}; const x = o.x || M, w = o.w || CW, size = o.size || SZ.body, bold = !!o.bold, lead = o.lead || LD.body;
+    const ls = wrap(text, size, bold, w); if (!ls.length) return;
+    if (ls.length <= (o.keep || 4)) room(ls.length * lead);
+    for (const ln of ls){ room(lead); put(ln, x, size, bold, lead); y += lead; }
+  };
+  const bullet = text => {
+    const bx = M + 3, tx = M + 13, w = CW - 13;
+    const ls = wrap(text, SZ.body, false, w); if (!ls.length) return;
+    if (ls.length <= 4) room(ls.length * LD.body);
+    ls.forEach((ln, i) => { room(LD.body); if (i === 0) put('•', bx, SZ.body, false, LD.body); put(ln, tx, SZ.body, false, LD.body); y += LD.body; });
+    y += 1.5;
+  };
+  const heading = (title, after) => {
+    room(6 + LD.head + 5 + (after || LD.body * 2));
+    if (y > M) y += 6;
+    put(title, M, SZ.head, true, LD.head); y += LD.head;
+    ops.push({t:'line', x1:M, y1:y, x2:M + CW, y2:y, w:0.6});
+    y += 5;
+  };
+  const nlines = (s, bold) => wrap(s, SZ.body, bold, CW).length;
+
+  const name = mdl.head.name || 'Your Name';
+  put(name, M, SZ.name, true, LD.name); y += LD.name;
+  mdl.head.lines.forEach(l => para(l));
+  y += 2;
+
+  mdl.secs.forEach(sec => {
+    const first = sec.items[0];
+    let after = LD.body * 2;
+    if (first && first.k === 'entry') after = (nlines(first.title, true) + first.lines.reduce((a, l) => a + nlines(l, false), 0) + (first.bullets.length ? 1 : 0)) * LD.body;
+    heading(sec.title, after);
+    sec.items.forEach((it, i) => {
+      if (it.k === 'entry'){
+        if (i > 0) y += 7;
+        const hl = nlines(it.title, true) + it.lines.reduce((a, l) => a + nlines(l, false), 0);
+        room((hl + (it.bullets.length ? 1 : 0)) * LD.body + 2);
+        para(it.title, {bold:true});
+        it.lines.forEach(l => para(l));
+        if (it.bullets.length){ y += 2; it.bullets.forEach(bullet); }
+      } else if (it.k === 'para'){
+        if (i > 0) y += 3;
+        para(it.text, {keep:6});
+      } else bullet(it.text);
+    });
+  });
+
+  const n = pages.length;
+  const used = (n - 1) + Math.max(0, Math.min(1, (y - M) / (BOT - M)));
+  if (n > 1) pages.forEach((p, i) => {
+    const s = name + ', page ' + (i + 1) + ' of ' + n;
+    const w = measure(s, SZ.foot, false);
+    p.push({t:'text', str:s, x:M + CW - w, y:PH - M - 2, size:SZ.foot, bold:false, w});
+  });
+  return {pages, used, bad, mdl};
+}
+const fmtPages = L => (Math.ceil(L.used * 10 - 1e-9) / 10).toFixed(1);
+
+/* ---------- keywords ---------- */
+const STOP = new Set(('a about above across after again against all also am an and any are as at be because been before being below between both but by can could did do does doing done down during each either etc few for from further had has have having he her here hers him his how i if in into is it its itself just like may me might more most must my no nor not now of off on once only or other our out over own per same shall she should so some such than that the their them then there these they this those through to too under until up upon us very via was we were what when where which while who whom why will with within without would you your yours').split(' '));
+const BOILER = new Set(('ability abilities able applicant applicants apply applying candidate candidates demonstrated demonstrate demonstrating duties duty equivalent example examples experience experiences federal following grade grades include includes including knowledge level levels minimum position positions qualification qualifications qualified qualify related required requirement requirements resume service skill skills specialized year years work works working perform performing performs performed responsible responsibilities typical typically using used use next lower higher time general basic least announcement order meet meets met documented describe described option options successfully one two three four five six seven specific well other various current provide provides providing must gained full-time part-time week weeks hours tools tool developing preparing ensuring ensure support supporting assist assisting area areas field fields type types multiple').split(' '));
+const isAcr = w => /^[A-Z0-9+#&/-]{2,}$/.test(w) && /[A-Z]/.test(w);
+function extractKeywords(text){
+  if (!text || !text.trim()) return [];
+  const uni = new Map(), bi = new Map(), seen = new Map(); let pos = 0;
+  const norm = w => isAcr(w) ? w : w.toLowerCase();
+  const ok = w => { const l = w.toLowerCase(); if (STOP.has(l) || BOILER.has(l) || /^\d+$/.test(w) || /^[A-Za-z]{2}-\d/.test(w)) return false; if (isAcr(w)) return !['GS','US','USA','OR','AND','NASA','OPM'].includes(w); return l.length >= 4; };
+  for (const sent of text.split(/[.;:\n•()\[\]!?]+/)){
+    const toks = sent.split(/[\s,"“”']+/).map(t => t.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9+#]+$/g, '')).filter(Boolean);
+    for (let i = 0; i < toks.length; i++){
+      const w = toks[i]; if (!ok(w)) continue;
+      const k = norm(w); uni.set(k, (uni.get(k) || 0) + 1); if (!seen.has(k)) seen.set(k, pos++);
+      if (i + 1 < toks.length && ok(toks[i + 1])){ const k2 = k + ' ' + norm(toks[i + 1]); bi.set(k2, (bi.get(k2) || 0) + 1); if (!seen.has(k2)) seen.set(k2, pos++); }
+    }
+  }
+  const sorter = (a, b) => (b[1] - a[1]) || (seen.get(a[0]) - seen.get(b[0]));
+  const bis = [...bi].filter(x => x[1] >= 2).sort(sorter).slice(0, 8).map(x => x[0]);
+  const inBi = new Set(bis.flatMap(b => b.split(' ')));
+  const unis = [...uni].filter(x => !inBi.has(x[0])).sort(sorter).slice(0, 20 - bis.length).map(x => x[0]);
+  return bis.concat(unis);
+}
+function keywords(){
+  const t = state.target, rem = new Set(t.kwRemoved.map(k => k.toLowerCase()));
+  const out = [], seen = new Set();
+  for (const k of t.kwAdded.concat(extractKeywords(t.reqText))){
+    const l = k.toLowerCase(); if (seen.has(l) || rem.has(l)) continue; seen.add(l); out.push(k);
+  }
+  return out;
+}
+const SUFFIX = ['ations','ation','ments','ment','ings','ing','ions','ion','ities','ity','ies','ied','ers','er','ed','es','s','al','ly'];
+function stem(w){ w = w.toLowerCase(); for (const s of SUFFIX){ if (w.endsWith(s) && w.length - s.length >= 4) return w.slice(0, -s.length); } return w; }
+function resumeText(){
+  const s = state, parts = [s.summary, s.skills, s.languages, s.awards, s.pubs, s.additional];
+  s.jobs.forEach(j => parts.push(j.title, j.employer, ...j.bullets));
+  s.edu.forEach(e => parts.push(e.degree, e.major, e.coursework));
+  s.certs.forEach(c => parts.push(c.name, c.issuer));
+  s.training.forEach(c => parts.push(c.name, c.provider));
+  return parts.join(' \n ');
+}
+function stemSet(){
+  const toks = resumeText().split(/[^A-Za-z0-9+#]+/).filter(Boolean);
+  return new Set(toks.map(stem));
+}
+function hasKw(kw, stems){
+  return kw.split(/\s+/).every(part => {
+    const s = stem(part.replace(/[^A-Za-z0-9+#]/g, ''));
+    if (!s) return true;
+    if (stems.has(s)) return true;
+    if (s.length < 4) return false;
+    for (const r of stems){ if (r.startsWith(s) || (r.length >= 4 && s.startsWith(r))) return true; }
+    return false;
+  });
+}
+
+/* ---------- checks ---------- */
+const KNOWN_ACR = new Set('NASA USA US GS GPA PHD BS BA MS MA MBA AA AS AAS IT HR PDF USAJOBS DC II III IV VI VII VIII IX XI XII AM PM CEO STEM CPR DD SF ID TX FL CA VA MD AL OH NY'.split(' '));
+let lastL = null, lastChecks = {req:[], adv:[], go:false};
+function runChecks(L){
+  const s = state, req = [], adv = [];
+  const c = s.contact, cm = [];
+  if (!c.name.trim()) cm.push('Add your full name.');
+  if (!c.email.trim()) cm.push('Add your email address.');
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c.email.trim())) cm.push('Check the email address. It should look like name@example.com.');
+  if (!c.phone.trim()) cm.push('Add your phone number.');
+  else if (digits(c.phone).length < 10) cm.push('Check the phone number. It needs at least 10 digits.');
+  req.push({label:'Contact information', ok:!cm.length, details:cm, step:1});
+
+  const jobs = s.jobs.filter(j => !jobEmpty(j)), em = [];
+  if (!jobs.length) em.push('Add at least one job, volunteer role, or military service.');
+  s.jobs.forEach((j, i) => { if (jobEmpty(j)) return; const nm = j.title.trim() || 'Job ' + (i + 1); jobProblems(j).forEach(p => em.push(nm + ': ' + p + '.')); });
+  req.push({label:'Work experience details', ok:!em.length, details:em, step:3});
+
+  const eds = s.edu.filter(e => !eduEmpty(e)), edm = [];
+  s.edu.forEach((e, i) => { if (eduEmpty(e)) return; const nm = e.school.trim() || 'School ' + (i + 1); eduProblems(e).forEach(p => edm.push(nm + ': ' + p + '.')); });
+  req.push({label:'Education details', ok:!edm.length, details:edm, step:4});
+
+  const crm = [];
+  s.certs.forEach((x, i) => { if (!x.name.trim() && (x.issuer.trim() || x.issY || x.expY)) crm.push('Certification ' + (i + 1) + ': add its name.'); });
+  s.training.forEach((x, i) => { if (!x.name.trim() && (x.provider.trim() || x.compY || x.hours.trim())) crm.push('Training ' + (i + 1) + ': add its name.'); if (x.hours.trim() && !/^\d+(\.\d+)?$/.test(x.hours.trim())) crm.push((x.name.trim() || 'Training ' + (i + 1)) + ': hours should be a number.'); });
+  if (s.certs.length || s.training.length) req.push({label:'Certifications and training', ok:!crm.length, details:crm, step:5});
+
+  const n = L.pages.length;
+  req.push({label:'Two-page limit', ok: n <= 2, details: n <= 2 ? [] : ['Your resume runs ' + fmtPages(L) + ' pages. Cut or tighten lines until the meter shows 2.0 or less. Older or unrelated jobs and extra lines are the first things to trim.'], step: n <= 2 ? null : 3});
+
+  const all = JSON.stringify(s), pm = [];
+  if (/\b\d{3}[- ]\d{2}[- ]\d{4}\b/.test(all.replace(/"(phone|supPhone)":"[^"]*"/g, ''))) pm.push('Something looks like a Social Security number. Remove it.');
+  if (/\b(TOP SECRET|SECRET|CONFIDENTIAL|CUI)\s*\/\//i.test(all) || /\bNOFORN\b/i.test(all) || /\((TS|S|C|U)\/\//.test(all)) pm.push('Something looks like a classification marking. Never include classified or sensitive information.');
+  req.push({label:'No prohibited information', ok:!pm.length, details:pm, step:null});
+
+  /* advisories */
+  const t = s.target;
+  if (!t.title.trim() || !t.announcement.trim()) adv.push({label:'Job details at the top', details:['Add the position title and announcement number so reviewers know exactly which job this is for.'], step:0});
+  const kws = keywords();
+  if (kws.length){
+    const st = stemSet(), miss = kws.filter(k => !hasKw(k, st));
+    const pct = Math.round(100 * (kws.length - miss.length) / kws.length);
+    if (miss.length) adv.push({label:'Announcement key words (' + pct + '% used)', details:['Not in your resume yet: ' + miss.join(', ') + '. Use the ones that truly describe your experience. Reviewers look for the announcement\u2019s exact wording.'], step:3});
+    else adv.push({label:'Announcement key words (100% used)', details:[], step:null, good:true});
+  } else adv.push({label:'Announcement key words', details:['Paste the Qualifications section in step 1 to check your resume against it.'], step:0});
+
+  const bullets = s.jobs.flatMap(j => j.bullets.map(b => b.trim()).filter(Boolean));
+  const withNum = bullets.filter(b => /\d/.test(b)).length;
+  if (bullets.length >= 3 && withNum / bullets.length < 0.4) adv.push({label:'Numbers in your lines', details:['Only ' + withNum + ' of ' + bullets.length + ' lines include a number. Add counts, percentages, dollars, or time saved where you honestly can.'], step:3});
+  const long = bullets.filter(b => words(b) > 55);
+  if (long.length) adv.push({label:'Long lines', details:[long.length + ' line' + (long.length > 1 ? 's run' : ' runs') + ' over 55 words. Split ' + (long.length > 1 ? 'them' : 'it') + ' so each line makes one point.'], step:3});
+  const dupes = bullets.filter((b, i) => bullets.findIndex(x => x.toLowerCase() === b.toLowerCase()) !== i);
+  if (dupes.length) adv.push({label:'Repeated lines', details:['Some accomplishment lines appear more than once. Keep one of each.'], step:3});
+  const body = [s.summary, s.skills].concat(bullets).join(' ');
+  const acr = [...new Set((body.match(/\b[A-Z][A-Z0-9&]{1,6}s?\b/g) || []).map(a => a.replace(/s$/, '')))].filter(a => !KNOWN_ACR.has(a) && !/^\d/.test(a) && !new RegExp('\\(' + a.replace(/[&]/g, '\\&') + 's?\\)').test(body));
+  if (acr.length) adv.push({label:'Acronyms', details:['Spell these out the first time, then put the acronym in parentheses: ' + acr.slice(0, 10).join(', ') + (acr.length > 10 ? ', and more' : '') + '. USAJOBS asks for plain language.'], step:3});
+  if (/\b(date of birth|DOB|birth ?date|marital status)\b/i.test(all) || /\bage[:\s]+\d{2}\b/i.test(all)) adv.push({label:'Personal details', details:['It looks like you mentioned your birth date, age, or marital status. Leave personal details off.'], step:null});
+  if (L.bad.size){
+    const shown = [...L.bad].filter(ch => !/[\uFE00-\uFE0F\u200B-\u200F]/.test(ch)).slice(0, 12).join(' ');
+    adv.push({label:'Unprintable characters', details:['These characters can\u2019t print in a standard PDF, so they were left out: ' + (shown || '(invisible characters)') + '. Replace them with plain text.'], step:null});
+  }
+  if (n === 1 && L.used < 0.75 && bullets.length) adv.push({label:'Room to spare', details:['You have space left. Add detail that shows you meet the specialized experience in the announcement.'], step:3});
+  if (!eds.length) adv.push({label:'Education', details:['No education listed. Add it if the announcement requires a degree, coursework, or a diploma.'], step:4});
+  return {req, adv, go: req.every(r => r.ok)};
+}
+
+/* ---------- preview ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){ const el = document.createElementNS(SVGNS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function renderPreview(L){
+  const box = $('#pages'); box.textContent = '';
+  L.pages.forEach((ops, i) => {
+    const over = i >= 2;
+    const label = document.createElement('p');
+    label.className = 'page-label' + (over ? ' over' : '');
+    label.textContent = over ? 'Page ' + (i + 1) + ' is over the two-page limit' : 'Page ' + (i + 1);
+    const wrapEl = document.createElement('div'); wrapEl.className = 'page' + (over ? ' over' : '');
+    const svg = svgEl('svg', {viewBox:'0 0 ' + PW + ' ' + PH, role:'img', 'aria-label':'Resume page ' + (i + 1)});
+    svg.appendChild(svgEl('rect', {x:0, y:0, width:PW, height:PH, fill:'#ffffff'}));
+    for (const op of ops){
+      if (op.t === 'text'){
+        const t = svgEl('text', {x:op.x, y:op.y, 'font-size':op.size, 'font-weight':op.bold ? 700 : 400, 'font-family':'Helvetica, Arial, sans-serif', fill:'#000', textLength:op.w.toFixed(2), lengthAdjust:'spacingAndGlyphs', style:'white-space:pre'});
+        t.textContent = op.str; svg.appendChild(t);
+      } else svg.appendChild(svgEl('line', {x1:op.x1, y1:op.y1, x2:op.x2, y2:op.y2, stroke:'#000', 'stroke-width':op.w}));
+    }
+    wrapEl.appendChild(svg); box.appendChild(label); box.appendChild(wrapEl);
+  });
+  const n = L.pages.length, over = n > 2;
+  $('#meter').className = 'meter' + (over ? ' over' : '');
+  $('#meter').innerHTML = '<div class="meter-top"><span>Length</span><strong>' + fmtPages(L) + ' of 2 pages' + (over ? ', over the limit' : '') + '</strong></div><div class="meter-bar"><span style="width:' + (Math.min(L.used / 2, 1) * 100).toFixed(1) + '%"></span><i></i></div><small>8.5 × 11 in, 0.5 in margins, Helvetica 10 pt. This preview matches the PDF line for line.</small>';
+  updateToggle();
+}
+function updateToggle(){
+  const b = $('#previewToggle'); if (!b || !lastL) return;
+  b.textContent = document.body.classList.contains('show-preview') ? 'Back to editing' : 'Show preview (' + fmtPages(lastL) + ' of 2 pages)';
+}
+
+/* ---------- layout scheduling ---------- */
+let layoutTimer = null;
+function doLayoutNow(){
+  clearTimeout(layoutTimer);
+  try {
+    lastL = layout(state);
+    lastChecks = runChecks(lastL);
+    renderPreview(lastL);
+  } catch (e) {
+    console.error(e);
+    $('#pages').innerHTML = '<p class="loading">The preview hit a problem. Your answers are still saved.</p>';
+  }
+  renderRail(); refreshLive();
+}
+function scheduleLayout(){ clearTimeout(layoutTimer); layoutTimer = setTimeout(doLayoutNow, 140); }
+function changed(){ scheduleSave(); scheduleLayout(); }
+
+/* ---------- form helpers ---------- */
+function getPath(path){ return path.split('.').reduce((o, k) => (o == null ? o : o[/^\d+$/.test(k) ? +k : k]), state); }
+function setPath(path, val){
+  const parts = path.split('.'); let o = state;
+  for (let i = 0; i < parts.length - 1; i++){ o = o[/^\d+$/.test(parts[i]) ? +parts[i] : parts[i]]; if (o == null) return; }
+  const last = parts[parts.length - 1]; o[/^\d+$/.test(last) ? +last : last] = val;
+}
+const fid = p => 'f-' + p.replace(/\./g, '-');
+function tf(o){
+  const id = fid(o.path), hid = o.hint ? id + '-h' : '';
+  const v = getPath(o.path);
+  const desc = hid ? ' aria-describedby="' + hid + '"' : '';
+  const ctl = o.area
+    ? '<textarea id="' + id + '" data-path="' + o.path + '" rows="' + (o.rows || 3) + '"' + desc + ' placeholder="' + esc(o.ph || '') + '" spellcheck="true">' + esc(v) + '</textarea>'
+    : '<input id="' + id + '" type="' + (o.type || 'text') + '" data-path="' + o.path + '" value="' + esc(v) + '"' + desc + ' placeholder="' + esc(o.ph || '') + '" ' + (o.attrs || '') + '>';
+  return '<div class="field ' + (o.cls || '') + '"><label for="' + id + '">' + o.label + '</label>' + (o.hint ? '<p class="hint" id="' + hid + '">' + o.hint + '</p>' : '') + ctl + '</div>';
+}
+function sel(o){
+  const id = fid(o.path), v = getPath(o.path);
+  const opts = o.opts.map(p => '<option value="' + esc(p[0]) + '"' + (String(v) === p[0] ? ' selected' : '') + '>' + esc(p[1]) + '</option>').join('');
+  return '<div class="field"><label for="' + id + '">' + o.label + '</label>' + (o.hint ? '<p class="hint">' + o.hint + '</p>' : '') + '<select id="' + id + '" data-path="' + o.path + '"' + (o.rerender ? ' data-rerender' : '') + '>' + opts + '</select></div>';
+}
+function cb(o){ return '<label class="check"><input type="checkbox" data-path="' + o.path + '"' + (getPath(o.path) ? ' checked' : '') + (o.rerender ? ' data-rerender' : '') + '> ' + o.label + '</label>'; }
+function myField(label, pm, py, disabled){
+  const vm = getPath(pm), vy = getPath(py);
+  const mo = '<option value="">Month</option>' + MONTHS.map((m, i) => { const v = String(i + 1).padStart(2, '0'); return '<option value="' + v + '"' + (vm === v ? ' selected' : '') + '>' + m + '</option>'; }).join('');
+  const yo = '<option value="">Year</option>' + YEARS.map(y => '<option value="' + y + '"' + (String(vy) === y ? ' selected' : '') + '>' + y + '</option>').join('');
+  return '<fieldset class="fs"' + (disabled ? ' disabled' : '') + '><legend class="q">' + label + '</legend><div class="my"><select aria-label="' + esc(label) + ' month" data-path="' + pm + '">' + mo + '</select><select aria-label="' + esc(label) + ' year" data-path="' + py + '">' + yo + '</select></div></fieldset>';
+}
+function navHTML(){
+  const s = state.step;
+  return '<div class="nav">' + (s > 0 ? '<button type="button" class="btn quiet" data-act="back">Back</button>' : '<span></span>') + (s < STEPS.length - 1 ? '<button type="button" class="btn primary" data-act="next">Next: ' + STEPS[s + 1].label + '</button>' : '') + '</div>';
+}
+
+/* ---------- steps ---------- */
+function chipsHTML(editable){
+  const kws = keywords();
+  if (!kws.length) return '<li class="empty">Paste the qualifications text above and key words appear here.</li>';
+  const st = stemSet();
+  return kws.map(k => { const used = hasKw(k, st); return '<li class="chip' + (used ? ' used' : '') + '">' + esc(k) + (used ? '<span class="vh"> (in your resume)</span>' : '') + (editable ? '<button type="button" data-act="kwRemove" data-arg="' + esc(k) + '" aria-label="Remove ' + esc(k) + '">×</button>' : '') + '</li>'; }).join('');
+}
+function stepJob(){
+  return '<div class="step"><h2>The job</h2><p class="lede">Open the announcement on USAJOBS. What you enter here goes at the top of your resume, and the rest of your answers get checked against it.</p>'
+  + tf({path:'target.title', label:'What is the position title?', ph:'Aerospace Engineer'})
+  + '<div class="row">' + tf({path:'target.seriesGrade', label:'Series and grade', ph:'GS-0861-12'}) + tf({path:'target.announcement', label:'Announcement number', ph:'From the top of the posting'}) + '</div>'
+  + tf({path:'target.reqText', area:true, rows:7, label:'Paste the Qualifications section', hint:'Copy the Qualifications and Specialized experience text from the announcement. The builder pulls out key words so you can make sure your resume uses them.'})
+  + '<div class="field"><p class="q">Key words to cover</p><p class="hint">Remove any that don\u2019t matter and add your own. Green ones already appear in your resume.</p><ul class="chips" id="kwchips">' + chipsHTML(true) + '</ul>'
+  + '<div class="kwadd"><input type="text" data-ui="kw" id="kwInput" placeholder="Add a key word" aria-label="Add a key word"><button type="button" class="btn quiet small" data-act="kwAdd">Add</button></div>'
+  + (state.target.kwRemoved.length ? '<p class="hint" style="margin-top:8px"><button type="button" class="linkbtn" data-act="kwReset">Bring back removed words (' + state.target.kwRemoved.length + ')</button></p>' : '') + '</div>'
+  + '<div class="note"><strong>NASA\u2019s rule on AI</strong>NASA lets applicants use AI tools for grammar and style only. The content has to be your own. This builder only organizes and formats what you write.</div>'
+  + navHTML() + '</div>';
+}
+function stepContact(){
+  return '<div class="step"><h2>Contact</h2><p class="lede">This goes at the top of the page.</p>'
+  + tf({path:'contact.name', label:'What is your full name?', ph:'Jordan A. Rivera', attrs:'autocomplete="name"'})
+  + '<div class="row">' + tf({path:'contact.email', type:'email', label:'Email', ph:'name@example.com', attrs:'autocomplete="email" inputmode="email"'}) + tf({path:'contact.phone', type:'tel', label:'Phone', ph:'(813) 555-0142', attrs:'autocomplete="tel"'}) + '</div>'
+  + '<div class="row">' + tf({path:'contact.city', label:'City (optional)', ph:'Houston'}) + tf({path:'contact.state', label:'State (optional)', ph:'TX'}) + '</div>'
+  + sel({path:'contact.citizen', label:'Are you a U.S. citizen?', hint:'Most NASA civil service jobs require citizenship. Choosing yes prints \u201cU.S. Citizen\u201d at the top.', opts:[['','Choose one'],['yes','Yes'],['no','No (leave it off)']]})
+  + tf({path:'contact.vet', label:'Veterans\u2019 preference (optional)', hint:'Only if you claim it. You will also upload proof, such as a DD-214, when you apply.', ph:'10-point preference'})
+  + tf({path:'contact.clearance', label:'Security clearance (optional)', hint:'Level and status only. Never include classified details.', ph:'Secret, active'})
+  + tf({path:'contact.status', label:'Federal status or hiring path (optional)', hint:'Leave blank if it doesn\u2019t apply.', ph:'Current federal employee'})
+  + '<div class="note"><strong>Leave these off</strong>Social Security number, date of birth or age, photos, marital status, religion, and other personal details.</div>'
+  + navHTML() + '</div>';
+}
+function stepSummary(){
+  return '<div class="step"><h2>Summary</h2><p class="lede">Optional, but it\u2019s the first thing a reviewer reads, so it\u2019s worth two or three strong sentences.</p>'
+  + tf({path:'summary', area:true, rows:5, label:'In two or three sentences, who are you professionally and why do you fit this job?', hint:'Use the announcement\u2019s own words for the skills it wants. Keep it about what you\u2019ve done.'})
+  + '<p class="count" id="sumcount"></p>' + navHTML() + '</div>';
+}
+function unusedHTML(){
+  const kws = keywords();
+  if (!kws.length) return '<p class="hint">Paste the announcement\u2019s qualifications in step 1 to see which key words your lines still need.</p>';
+  const st = stemSet(), miss = kws.filter(k => !hasKw(k, st));
+  if (!miss.length) return '<p class="hint good">Your resume uses every key word on your list.</p>';
+  return '<p class="q">Key words not in your resume yet</p><ul class="chips">' + miss.map(k => '<li class="chip">' + esc(k) + '</li>').join('') + '</ul>';
+}
+function tagFor(probs, empty){ return empty ? ['', 'Not started'] : probs.length ? ['hold', probs.length + ' to fix'] : ['go', 'Complete']; }
+function jobHTML(j, i){
+  const p = 'jobs.' + i, probs = jobProblems(j), empty = jobEmpty(j), tag = tagFor(probs, empty);
+  const open = ui.open[j.id] !== undefined ? ui.open[j.id] : (empty || i === 0);
+  const empPh = {military:'U.S. Army, 3rd Infantry Division', contractor:'Company name (contractor to NASA)', federal:'NASA Johnson Space Center', volunteer:'Organization name', civilian:'Company or organization name'}[j.kind];
+  const titlePh = {military:'Unit Supply Specialist', volunteer:'Volunteer Tutor', federal:'Program Analyst'}[j.kind] || 'Engineering Technician';
+  const bullets = j.bullets.map((b, k) => '<div class="bullet-row"><span class="bullet-mark" aria-hidden="true">•</span><textarea rows="2" data-path="' + p + '.bullets.' + k + '" aria-label="Accomplishment ' + (k + 1) + '" placeholder="' + (k === 0 ? 'Example: Cut test-stand setup time 30% by writing a standard checklist for a 6-person crew.' : '') + '" spellcheck="true">' + esc(b) + '</textarea><div class="bullet-tools"><button type="button" class="iconbtn" data-act="moveBullet" data-arg="' + j.id + '" data-arg2="' + k + '" data-arg3="-1" aria-label="Move line ' + (k + 1) + ' up"' + (k === 0 ? ' disabled' : '') + '>↑</button><button type="button" class="iconbtn" data-act="moveBullet" data-arg="' + j.id + '" data-arg2="' + k + '" data-arg3="1" aria-label="Move line ' + (k + 1) + ' down"' + (k === j.bullets.length - 1 ? ' disabled' : '') + '>↓</button><button type="button" class="iconbtn" data-act="delBullet" data-arg="' + j.id + '" data-arg2="' + k + '" aria-label="Remove line ' + (k + 1) + '">×</button></div></div>').join('');
+  return '<details class="entry" data-entry="' + j.id + '"' + (open ? ' open' : '') + '><summary><span class="entry-num">' + (i + 1) + '</span><span class="entry-title" data-etitle>' + esc(j.title || 'New job') + '<small>' + esc(j.employer) + '</small></span><span class="tag ' + tag[0] + '" data-etag>' + tag[1] + '</span></summary><div class="entry-body">'
+  + sel({path:p + '.kind', label:'What kind of position was this?', rerender:true, opts:[['civilian','Private sector, nonprofit, or state/local government'],['federal','Federal civilian job (GS, WG, and so on)'],['military','Military service'],['contractor','Federal contractor'],['volunteer','Volunteer']]})
+  + (KIND_HINT[j.kind] ? '<p class="hint kindhint">' + KIND_HINT[j.kind] + '</p>' : '')
+  + tf({path:p + '.title', label:'What was your official job title?', hint:'Use the title from your paperwork. If it isn\u2019t self-explanatory, add a plain version in parentheses.', ph:titlePh})
+  + (j.kind === 'military' ? tf({path:p + '.rank', label:'Rank (optional)', ph:'SGT / E-5', cls:'narrow'}) : '')
+  + tf({path:p + '.employer', label: j.kind === 'military' ? 'Branch and unit' : 'Who was the employer?', ph:empPh})
+  + '<div class="row">' + tf({path:p + '.city', label:'City', ph:'Houston'}) + tf({path:p + '.state', label:'State', ph:'TX'}) + '</div>'
+  + (j.kind === 'federal' ? '<fieldset class="fs"><legend class="q">Pay plan, series, and grade</legend><div class="row3"><div><label for="' + fid(p + '.payPlan') + '">Pay plan</label><input type="text" id="' + fid(p + '.payPlan') + '" data-path="' + p + '.payPlan" value="' + esc(j.payPlan) + '" maxlength="2" placeholder="GS"></div><div><label for="' + fid(p + '.series') + '">Series</label><input type="text" id="' + fid(p + '.series') + '" data-path="' + p + '.series" value="' + esc(j.series) + '" maxlength="4" inputmode="numeric" placeholder="0861"></div><div><label for="' + fid(p + '.grade') + '">Grade</label><input type="text" id="' + fid(p + '.grade') + '" data-path="' + p + '.grade" value="' + esc(j.grade) + '" maxlength="4" placeholder="12"></div></div></fieldset>' : '')
+  + '<div class="row">' + myField('When did you start?', p + '.startM', p + '.startY') + myField('When did it end?', p + '.endM', p + '.endY', j.current) + '</div>'
+  + cb({path:p + '.current', label:'I still work here', rerender:true})
+  + tf({path:p + '.hours', label:'How many hours a week did you work?', hint:'Your typical week. Part-time counts; just be accurate.', ph:'40', cls:'narrow', attrs:'inputmode="decimal"'})
+  + '<details class="optional" data-opt="' + j.id + '"' + (ui.opt[j.id] ? ' open' : '') + '><summary>Optional: salary and supervisor</summary><div class="row">' + tf({path:p + '.salary', label:'Salary', ph:'$68,000'}) + sel({path:p + '.salaryBasis', label:'Paid', opts:[['per year','Per year'],['per hour','Per hour']]}) + '</div><div class="row">' + tf({path:p + '.supName', label:'Supervisor name', ph:'Pat Morgan'}) + tf({path:p + '.supPhone', type:'tel', label:'Supervisor phone', ph:'(281) 555-0199'}) + '</div>' + sel({path:p + '.supContact', label:'May the agency contact this supervisor?', opts:[['','Choose one'],['yes','Yes'],['ask','Contact me first'],['no','No']]}) + '</details>'
+  + '<div class="field"><p class="q">What did you do and accomplish here?</p><p class="hint">One accomplishment per line, results first. These questions help:</p><ul class="prompts"><li>What were you responsible for? How many people, dollars, projects, or systems?</li><li>What did you improve or deliver, and by how much?</li><li>Which tools, software, or methods did you use? Name them the way the announcement does.</li><li>Who did you work with, train, or brief?</li><li>Which duties match the announcement\u2019s specialized experience?</li></ul>'
+  + bullets + '<button type="button" class="btn quiet small" data-act="addBullet" data-arg="' + j.id + '">Add a line</button>'
+  + '<details class="builder" data-builder="' + j.id + '"' + (ui.builder[j.id] ? ' open' : '') + '><summary>Help me write a line</summary><p class="hint">Answer three short questions and it joins your answers into one line you can edit.</p>'
+  + '<div class="field"><label for="bx-' + j.id + '">What did you accomplish?</label><input type="text" id="bx-' + j.id + '" data-ui="bx" placeholder="Cut test-stand setup time"></div>'
+  + '<div class="field"><label for="by-' + j.id + '">How was it measured?</label><input type="text" id="by-' + j.id + '" data-ui="by" placeholder="by 30%, from 5 hours to 3.5"></div>'
+  + '<div class="field"><label for="bz-' + j.id + '">How did you do it?</label><input type="text" id="bz-' + j.id + '" data-ui="bz" placeholder="writing a standard checklist for a 6-person crew"></div>'
+  + '<button type="button" class="btn quiet small" data-act="buildBullet" data-arg="' + j.id + '">Add as a line</button></details></div>'
+  + '<div class="entry-tools"><button type="button" class="btn quiet small" data-act="moveJob" data-arg="' + j.id + '" data-arg2="-1"' + (i === 0 ? ' disabled' : '') + '>Move up</button><button type="button" class="btn quiet small" data-act="moveJob" data-arg="' + j.id + '" data-arg2="1"' + (i === state.jobs.length - 1 ? ' disabled' : '') + '>Move down</button><button type="button" class="btn quiet small danger" data-act="delJob" data-arg="' + j.id + '">Remove job</button></div>'
+  + '</div></details>';
+}
+function stepExperience(){
+  return '<div class="step"><h2>Experience</h2><p class="lede">Add each job that relates to this announcement, newest first. Volunteer work and military service count. Every entry needs dates, hours per week, and what you accomplished.</p>'
+  + '<div class="kwbar" id="kwunused">' + unusedHTML() + '</div>'
+  + '<div class="entries">' + state.jobs.map(jobHTML).join('') + '</div>'
+  + '<div class="toolbar"><button type="button" class="btn quiet" data-act="addJob">Add a job</button><button type="button" class="btn quiet" data-act="sortJobs">Sort newest first</button></div>'
+  + navHTML() + '</div>';
+}
+function eduHTML(e, i){
+  const p = 'edu.' + i, probs = eduProblems(e), empty = eduEmpty(e), tag = tagFor(probs, empty);
+  const open = ui.open[e.id] !== undefined ? ui.open[e.id] : true;
+  return '<details class="entry" data-entry="' + e.id + '" data-kind="edu"' + (open ? ' open' : '') + '><summary><span class="entry-num">' + (i + 1) + '</span><span class="entry-title" data-etitle>' + esc(e.school || 'New school') + '<small>' + esc(joinNE(', ', e.degree, e.major)) + '</small></span><span class="tag ' + tag[0] + '" data-etag>' + tag[1] + '</span></summary><div class="entry-body">'
+  + tf({path:p + '.school', label:'What school did you attend?', ph:'University of Central Florida'})
+  + '<div class="row">' + tf({path:p + '.city', label:'City (optional)', ph:'Orlando'}) + tf({path:p + '.state', label:'State (optional)', ph:'FL'}) + '</div>'
+  + tf({path:p + '.degree', label:'What degree or diploma?', ph:'Bachelor of Science', attrs:'list="degree-list"'})
+  + tf({path:p + '.major', label:'Major or field of study', ph:'Aerospace Engineering'})
+  + myField('When did you finish?', p + '.compM', p + '.compY')
+  + cb({path:p + '.expected', label:'Not finished yet (this is my expected date)'})
+  + '<div class="row">' + tf({path:p + '.gpa', label:'GPA (optional)', ph:'3.6', attrs:'inputmode="decimal"'}) + tf({path:p + '.gpaScale', label:'Out of', ph:'4.0', attrs:'inputmode="decimal"'}) + '</div>'
+  + tf({path:p + '.coursework', area:true, rows:2, label:'Relevant coursework (optional)', hint:'Courses that match the announcement, separated by commas.'})
+  + '<div class="entry-tools"><button type="button" class="btn quiet small" data-act="moveEdu" data-arg="' + e.id + '" data-arg2="-1"' + (i === 0 ? ' disabled' : '') + '>Move up</button><button type="button" class="btn quiet small" data-act="moveEdu" data-arg="' + e.id + '" data-arg2="1"' + (i === state.edu.length - 1 ? ' disabled' : '') + '>Move down</button><button type="button" class="btn quiet small danger" data-act="delEdu" data-arg="' + e.id + '">Remove school</button></div></div></details>';
+}
+function stepEducation(){
+  return '<div class="step"><h2>Education</h2><p class="lede">If the announcement requires a degree or specific coursework, list it here and plan to upload transcripts when you apply.</p>'
+  + cb({path:'opts.eduFirst', label:'Show education above experience'}) + '<p class="hint" style="margin-top:-14px;margin-bottom:22px">Common for students, recent graduates, and jobs you qualify for through education.</p>'
+  + '<div class="entries">' + state.edu.map(eduHTML).join('') + '</div>'
+  + '<datalist id="degree-list"><option value="High school diploma"><option value="GED"><option value="Associate of Science"><option value="Associate of Applied Science"><option value="Bachelor of Science"><option value="Bachelor of Arts"><option value="Master of Science"><option value="Master of Engineering"><option value="Master of Business Administration"><option value="Doctor of Philosophy"></datalist>'
+  + '<div class="toolbar"><button type="button" class="btn quiet" data-act="addEdu">Add a school</button></div>' + navHTML() + '</div>';
+}
+function stepCredentials(){
+  const certs = state.certs.map((x, i) => { const p = 'certs.' + i; return '<div class="entry flat">' + '<div class="row">' + tf({path:p + '.name', label:'Certification or license', ph:'FAA Part 107 Remote Pilot'}) + tf({path:p + '.issuer', label:'Issued by', ph:'Federal Aviation Administration'}) + '</div><div class="row">' + myField('Issued (optional)', p + '.issM', p + '.issY') + myField('Expires (optional)', p + '.expM', p + '.expY') + '</div><div class="entry-tools"><button type="button" class="btn quiet small danger" data-act="delCert" data-arg="' + x.id + '">Remove</button></div></div>'; }).join('');
+  const trains = state.training.map((x, i) => { const p = 'training.' + i; return '<div class="entry flat">' + '<div class="row">' + tf({path:p + '.name', label:'Course or training', ph:'Systems Engineering Fundamentals'}) + tf({path:p + '.provider', label:'Provided by', ph:'NASA APPEL'}) + '</div><div class="row">' + myField('Completed (optional)', p + '.compM', p + '.compY') + tf({path:p + '.hours', label:'Hours (optional)', ph:'24', attrs:'inputmode="decimal"'}) + '</div><div class="entry-tools"><button type="button" class="btn quiet small danger" data-act="delTrain" data-arg="' + x.id + '">Remove</button></div></div>'; }).join('');
+  return '<div class="step"><h2>Certifications and training</h2><p class="lede">Include licenses and certifications the announcement asks for, plus training that relates to the job. Skip anything unrelated to save space.</p>'
+  + '<h3>Certifications and licenses</h3><div class="entries">' + (certs || '<p class="hint">None added.</p>') + '</div><div class="toolbar"><button type="button" class="btn quiet" data-act="addCert">Add a certification</button></div>'
+  + '<h3>Training</h3><div class="entries">' + (trains || '<p class="hint">None added.</p>') + '</div><div class="toolbar"><button type="button" class="btn quiet" data-act="addTrain">Add training</button></div>'
+  + navHTML() + '</div>';
+}
+function stepExtras(){
+  return '<div class="step"><h2>Skills and extras</h2><p class="lede">All optional. Only include what helps for this job; space is tight at two pages.</p>'
+  + tf({path:'skills', area:true, rows:3, label:'Skills and tools', hint:'Software, equipment, and methods, separated by commas. Match the announcement\u2019s wording.', ph:'MATLAB, SolidWorks, technical writing, test planning'})
+  + tf({path:'languages', area:true, rows:2, label:'Languages', hint:'One per line with your level.', ph:'Spanish (professional working proficiency)'})
+  + tf({path:'awards', area:true, rows:3, label:'Awards and honors', hint:'One per line, with the year.'})
+  + tf({path:'pubs', area:true, rows:3, label:'Publications and presentations', hint:'One per line: title, where it appeared, and year.'})
+  + tf({path:'additional', area:true, rows:3, label:'Anything else the announcement asks you to include', hint:'For example availability or willingness to travel.'})
+  + navHTML() + '</div>';
+}
+function pollRow(r, cls, call){
+  const det = r.details && r.details.length ? '<ul class="poll-detail">' + r.details.map(d => '<li>' + esc(d) + '</li>').join('') + '</ul>' : '';
+  const fix = (r.step != null && cls !== 'go' && !r.good) ? '<button type="button" class="linkbtn poll-fix" data-act="goto" data-arg="' + r.step + '">Go to ' + STEPS[r.step].label + '</button>' : '';
+  return '<li class="poll-row is-' + cls + '"><span class="poll-label">' + esc(r.label) + '</span><span class="poll-leader" aria-hidden="true"></span><span class="poll-call">' + call + '</span>' + det + fix + '</li>';
+}
+function wordDiff(a, b){
+  const A = a.split(/(\s+)/), B = b.split(/(\s+)/), n = A.length, m = B.length;
+  if (n * m > 160000) return {a: esc(a), b: esc(b)};
+  const T = Array.from({length:n + 1}, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) T[i][j] = A[i] === B[j] ? T[i + 1][j + 1] + 1 : Math.max(T[i + 1][j], T[i][j + 1]);
+  let i = 0, j = 0, oa = '', ob = '';
+  while (i < n && j < m){
+    if (A[i] === B[j]){ oa += esc(A[i]); ob += esc(B[j]); i++; j++; }
+    else if (T[i + 1][j] >= T[i][j + 1]){ oa += /\S/.test(A[i]) ? '<del>' + esc(A[i]) + '</del>' : esc(A[i]); i++; }
+    else { ob += /\S/.test(B[j]) ? '<ins>' + esc(B[j]) + '</ins>' : esc(B[j]); j++; }
+  }
+  while (i < n){ oa += /\S/.test(A[i]) ? '<del>' + esc(A[i]) + '</del>' : esc(A[i]); i++; }
+  while (j < m){ ob += /\S/.test(B[j]) ? '<ins>' + esc(B[j]) + '</ins>' : esc(B[j]); j++; }
+  return {a: oa, b: ob};
+}
+function proofHTML(){
+  if (spState !== 'ready') return '';
+  const p = ui.proof; let body;
+  if (!p) body = '<button type="button" class="btn quiet" data-act="proofread">Check spelling and grammar</button>';
+  else if (p.status === 'running') body = '<p class="hint" role="status">Checking your summary and lines…</p>';
+  else if (p.status === 'error') body = '<p class="hint">' + esc(p.msg) + '</p>' + (p.retry ? '<button type="button" class="btn quiet small" data-act="proofread">Try again</button>' : '');
+  else {
+    const left = p.fixes.filter(f => !f.done);
+    body = left.length ? left.map(f => { const d = wordDiff(f.orig, f.fixed); return '<div class="fix"><p>' + d.a + '</p><p>' + d.b + '</p>' + (f.why ? '<p class="why">' + esc(f.why) + '</p>' : '') + '<div class="btnrow"><button type="button" class="btn quiet small" data-act="acceptFix" data-arg="' + f.i + '">Use this fix</button><button type="button" class="btn quiet small" data-act="dismissFix" data-arg="' + f.i + '">Keep mine</button></div></div>'; }).join('')
+      : '<p class="hint good">' + (p.fixes.length ? 'All suggestions handled.' : 'No spelling or grammar problems found.') + '</p>';
+    body += '<button type="button" class="btn quiet small" data-act="proofread">Check again</button>';
+  }
+  return '<section class="block"><h3>Proofread</h3><p class="hint">Flags spelling, grammar, and punctuation only, and never adds content, which fits NASA\u2019s rule that AI may help with grammar and style. You approve each change.</p>' + body + '</section>';
+}
+function plainText(mdl){
+  const out = [(mdl.head.name || 'Your Name').toUpperCase()].concat(mdl.head.lines);
+  mdl.secs.forEach(s => {
+    out.push('', s.title.toUpperCase());
+    s.items.forEach((it, i) => {
+      if (it.k === 'entry'){ if (i) out.push(''); out.push(it.title, ...it.lines, ...it.bullets.map(b => '• ' + b)); }
+      else if (it.k === 'para') out.push(it.text);
+      else out.push('• ' + it.text);
+    });
+  });
+  return out.join('\n');
+}
+function stepReview(){
+  const ch = lastChecks, L = lastL, holds = ch.req.filter(r => !r.ok);
+  const verdict = ch.go
+    ? '<div class="verdict go"><div class="call">GO</div><p>Every required item checks out. Your resume is ' + fmtPages(L) + ' pages.</p></div>'
+    : '<div class="verdict hold"><div class="call">HOLD</div><p>' + (holds.length === 1 ? 'One item needs' : holds.length + ' items need') + ' fixing before you download.</p></div>';
+  const req = ch.req.map(r => pollRow(r, r.ok ? 'go' : 'hold', r.ok ? 'GO' : 'HOLD')).join('');
+  const notes = ch.adv.map(a => pollRow(a, a.good ? 'go' : 'note', a.good ? 'GO' : 'NOTE')).join('');
+  let dlBlock;
+  if (!JS) dlBlock = '<p class="hint">The PDF tool didn\u2019t load. Check your connection and reload the page. Your answers are saved.</p>';
+  else if (dlState === 'none') dlBlock = '<p class="hint">Saving files isn\u2019t available in this view. You can still copy the text below into the USAJOBS resume builder.</p>';
+  else dlBlock = '<div class="btnrow">' + (ch.go ? '<button type="button" class="btn primary" data-act="pdf">Download PDF</button>' : '<button type="button" class="btn quiet" data-act="pdfDraft">Download draft PDF</button>') + '<button type="button" class="btn quiet" data-act="txt">Download as text</button></div>'
+    + (ch.go ? '' : '<p class="hint">The final PDF unlocks at GO. A draft is fine for sharing with someone who\u2019s helping you.</p>');
+  const mdl = L.mdl, exp = mdl.secs.find(s => s.title === 'Work Experience');
+  let blocks = '<div class="copyblock"><div class="copyhead"><span>Whole resume</span><button type="button" class="btn quiet small" data-act="copy" data-arg="cp-all">Copy</button></div><textarea readonly id="cp-all" rows="8">' + esc(plainText(mdl)) + '</textarea></div>';
+  if (exp) exp.items.forEach((it, i) => { blocks += '<div class="copyblock"><div class="copyhead"><span>' + esc(it.title) + '</span><button type="button" class="btn quiet small" data-act="copy" data-arg="cp-' + i + '">Copy</button></div><textarea readonly id="cp-' + i + '" rows="6">' + esc([it.title].concat(it.lines, it.bullets.map(b => '• ' + b)).join('\n')) + '</textarea></div>'; });
+  return '<div class="step"><h2>Go / No-go</h2><p class="lede">Every required item has to call GO before the final download. Notes are suggestions that make a stronger resume.</p>'
+  + verdict + '<h3>Required</h3><ul class="poll">' + req + '</ul>'
+  + (notes ? '<h3>Notes</h3><ul class="poll">' + notes + '</ul>' : '')
+  + proofHTML()
+  + '<section class="block"><h3>Download</h3><p class="hint">USAJOBS recommends a PDF. Upload it under Documents in your USAJOBS profile, then attach it when you apply.</p>' + dlBlock + '</section>'
+  + '<details class="section"><summary>Text for the USAJOBS resume builder</summary><p class="hint">NASA encourages applicants to use the USAJOBS resume builder. Paste each block into the matching fields there.</p>' + blocks + '</details>'
+  + '<section class="block"><h3>Before you apply</h3><ul class="list"><li>Read the announcement\u2019s How to Apply and Required Documents sections. Some ask for transcripts, a DD-214, or other proof.</li><li>Have someone with a good eye read the PDF once, start to finish.</li><li>Tailor your lines and key words for each announcement. One resume rarely fits every job.</li></ul></section>'
+  + '<section class="block"><h3>Your saved work</h3><p class="hint">Your answers are saved in this browser on this device only. Save a backup file to move them to another device or keep a copy.</p><div class="btnrow">' + (dlState !== 'none' ? '<button type="button" class="btn quiet" data-act="backup">Save a backup file</button>' : '') + '<button type="button" class="btn quiet" data-act="restore">Load a backup file</button><button type="button" class="btn quiet danger" data-act="startOver">Start over</button></div></section>'
+  + navHTML() + '</div>';
+}
+const RENDER = [stepJob, stepContact, stepSummary, stepExperience, stepEducation, stepCredentials, stepExtras, stepReview];
+
+/* ---------- render ---------- */
+function renderRail(){
+  const ch = lastChecks, done = {};
+  ch.req.forEach(r => { if (r.step != null && !r.ok) done[r.step] = false; });
+  const has = {1: !!state.contact.name.trim(), 3: state.jobs.some(j => !jobEmpty(j)), 4: state.edu.some(e => !eduEmpty(e))};
+  const ok = i => i === REVIEW ? ch.go : ((i in has) ? has[i] && done[i] !== false : false);
+  $('#rail').innerHTML = STEPS.map((s, i) => '<li><button type="button" class="' + (ok(i) ? 'done' : '') + '" data-act="goto" data-arg="' + i + '"' + (i === state.step ? ' aria-current="step"' : '') + '><span class="num">' + (ok(i) ? '✓' : i + 1) + '</span>' + s.label + '</button></li>').join('');
+}
+function renderStep(){
+  $('#form').innerHTML = RENDER[state.step]();
+  $('#form').querySelectorAll('textarea:not([readonly])').forEach(autogrow);
+  refreshLive();
+}
+function render(){ doLayoutNow(); renderStep(); const cur = $('#rail [aria-current]'); if (cur && cur.scrollIntoView) cur.scrollIntoView({block:'nearest', inline:'nearest'}); }
+function refreshLive(){
+  const f = $('#form'); if (!f) return;
+  f.querySelectorAll('details[data-entry]').forEach(d => {
+    const id = d.dataset.entry, isEdu = d.dataset.kind === 'edu';
+    const item = (isEdu ? state.edu : state.jobs).find(x => x.id === id); if (!item) return;
+    const tag = isEdu ? tagFor(eduProblems(item), eduEmpty(item)) : tagFor(jobProblems(item), jobEmpty(item));
+    const t = d.querySelector('[data-etag]'); if (t){ t.className = 'tag ' + tag[0]; t.textContent = tag[1]; }
+    const ti = d.querySelector('[data-etitle]');
+    if (ti){ ti.firstChild.nodeValue = isEdu ? (item.school || 'New school') : (item.title || 'New job'); ti.querySelector('small').textContent = isEdu ? joinNE(', ', item.degree, item.major) : item.employer; }
+  });
+  const kc = $('#kwchips'); if (kc) kc.innerHTML = chipsHTML(true);
+  const ku = $('#kwunused'); if (ku) ku.innerHTML = unusedHTML();
+  const sc = $('#sumcount'); if (sc){ const w = words(state.summary); sc.textContent = w + (w === 1 ? ' word' : ' words') + (w > 90 ? '. Consider trimming to save space.' : ''); }
+}
+function autogrow(el){ if (!el.offsetParent) return; el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+
+/* ---------- actions ---------- */
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => t.classList.remove('show'), 2600); }
+function focusSoon(selector){ requestAnimationFrame(() => { const el = $(selector); if (el){ el.focus(); if (el.scrollIntoView) el.scrollIntoView({block:'center'}); } }); }
+function armed(btn, fn){
+  if (btn.dataset.armed === '1'){ fn(); return; }
+  const orig = btn.textContent; btn.dataset.armed = '1'; btn.textContent = 'Tap again to confirm';
+  setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1'){ btn.dataset.armed = ''; btn.textContent = orig; } }, 3500);
+}
+function moveIn(arr, id, dir){ const i = arr.findIndex(x => x.id === id), t = i + dir; if (i < 0 || t < 0 || t >= arr.length) return false; const tmp = arr[i]; arr[i] = arr[t]; arr[t] = tmp; return true; }
+const findJob = id => state.jobs.find(j => j.id === id);
+function go(n){
+  n = Math.max(0, Math.min(STEPS.length - 1, n));
+  state.step = n; scheduleSave(); document.body.classList.remove('show-preview'); render(); window.scrollTo(0, 0);
+}
+function lastName(){ const parts = clean(state.contact.name).split(' ').filter(p => !/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(p)); return parts.length ? parts[parts.length - 1] : 'Resume'; }
+const safeName = s => clean(s).replace(/[^A-Za-z0-9-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+function fileBase(){ const ann = safeName(state.target.announcement); return safeName(lastName()) + '_Federal_Resume' + (ann ? '_' + ann : ''); }
+async function saveFile(filename, data){
+  if (dlState === 'native'){ nativeSave(filename, data); return; }
+  if (!dl){ toast(dlState === 'pending' ? 'Getting ready. Try again in a moment.' : 'Saving files isn\u2019t available in this view.'); return; }
+  try { const r = await dl.save({filename, data}); if (!r || r.status === 'saved') toast('Saved ' + filename); }
+  catch (e) {
+    const code = e && e.code;
+    if (code === 'declined') toast('Download canceled.');
+    else if (code === 'rate_limited') toast('A save prompt is already open.');
+    else toast('This view couldn\u2019t save the file.');
+  }
+}
+function buildPdf(L){
+  const doc = new JS({unit:'pt', format:'letter', compress:true, putOnlyUsedFonts:true});
+  const nm = clean(state.contact.name);
+  doc.setProperties({title: nm ? nm + ' - Federal Resume' : 'Federal Resume', author: nm, subject: joinNE(' ', clean(state.target.title), clean(state.target.announcement)), creator: 'Federal resume builder'});
+  doc.setTextColor(0, 0, 0); doc.setDrawColor(0, 0, 0);
+  L.pages.forEach((ops, i) => {
+    if (i) doc.addPage('letter', 'portrait');
+    for (const op of ops){
+      if (op.t === 'text'){ doc.setFont('helvetica', op.bold ? 'bold' : 'normal'); doc.setFontSize(op.size); doc.text(op.str, op.x, op.y); }
+      else { doc.setLineWidth(op.w); doc.line(op.x1, op.y1, op.x2, op.y2); }
+    }
+  });
+  return doc.output('arraybuffer');
+}
+async function copyText(text, btn){
+  let ok = false;
+  try { if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); ok = true; } } catch (e) {}
+  if (!ok){
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
+  }
+  const orig = btn.textContent; btn.textContent = ok ? 'Copied' : 'Select the text and copy it';
+  setTimeout(() => { if (btn.isConnected) btn.textContent = orig; }, 2200);
+}
+async function proofread(){
+  if (!sampler) return;
+  const items = [];
+  if (state.summary.trim()) items.push({id:'summary', text: state.summary.trim()});
+  state.jobs.forEach(j => j.bullets.forEach((b, k) => { if (b.trim()) items.push({id:'b:' + j.id + ':' + k, text: b.trim()}); }));
+  if (!items.length){ ui.proof = {status:'error', msg:'Write your summary or some accomplishment lines first.', retry:false}; renderStep(); return; }
+  ui.proof = {status:'running'}; renderStep();
+  const prompt = 'You are a careful proofreader for a U.S. federal resume. For each item, fix ONLY spelling, grammar, punctuation, capitalization, and verb agreement or tense errors.\n'
+    + 'Rules:\n- Never add, remove, or change facts, numbers, names, tools, titles, or claims.\n- Do not rewrite for style, tone, or length. Keep the writer\u2019s words unless a word is misspelled or grammatically wrong.\n- Use U.S. English.\n- Skip items that have no errors.\n'
+    + 'Return only a JSON array. Each element: {"id": string, "fixed": string, "why": string of at most 10 words}. Return [] if nothing needs fixing.\n\nItems:\n' + JSON.stringify(items);
+  try {
+    const res = await sampler.json(prompt, {modelTier:'default'});
+    const byId = new Map(items.map(x => [x.id, x.text]));
+    const fixes = (Array.isArray(res) ? res : []).filter(f => f && typeof f.id === 'string' && typeof f.fixed === 'string' && byId.has(f.id)).map(f => ({id:f.id, orig:byId.get(f.id), fixed:f.fixed.trim(), why: typeof f.why === 'string' ? f.why.slice(0, 120) : ''}))
+      .filter(f => f.fixed && f.fixed !== f.orig && digits(f.fixed) === digits(f.orig) && f.fixed.length > f.orig.length * 0.6 && f.fixed.length < f.orig.length * 1.4)
+      .map((f, i) => Object.assign(f, {i, done:false}));
+    ui.proof = {status:'done', fixes};
+  } catch (e) {
+    const code = e && e.code;
+    ui.proof = {status:'error', retry: code !== 'not_granted', msg: code === 'rate_limited' ? 'Too many checks in a short time. Wait a minute and try again.' : code === 'not_granted' ? 'Proofreading wasn\u2019t allowed in this view.' : 'The check didn\u2019t finish. Try again.'};
+    if (code === 'not_granted') spState = 'none';
+  }
+  if (state.step === REVIEW) renderStep();
+}
+const ACTIONS = {
+  goto: n => go(+n),
+  next: () => go(state.step + 1),
+  back: () => go(state.step - 1),
+  addJob: () => { const j = blankJob(); state.jobs.push(j); ui.open[j.id] = true; changed(); renderStep(); focusSoon('#' + fid('jobs.' + (state.jobs.length - 1) + '.kind')); },
+  delJob: (id, a2, a3, btn) => armed(btn, () => { state.jobs = state.jobs.filter(j => j.id !== id); if (!state.jobs.length) state.jobs.push(blankJob()); changed(); renderStep(); toast('Job removed'); }),
+  moveJob: (id, dir) => { if (moveIn(state.jobs, id, +dir)){ changed(); renderStep(); } },
+  sortJobs: () => { state.jobs.sort(cmpJobs); changed(); renderStep(); toast('Sorted newest first'); },
+  addBullet: id => { const j = findJob(id); j.bullets.push(''); changed(); renderStep(); focusSoon('[data-path="jobs.' + state.jobs.indexOf(j) + '.bullets.' + (j.bullets.length - 1) + '"]'); },
+  delBullet: (id, k) => { const j = findJob(id); j.bullets.splice(+k, 1); if (!j.bullets.length) j.bullets.push(''); changed(); renderStep(); },
+  moveBullet: (id, k, dir) => { const j = findJob(id), i = +k, t = i + (+dir); if (t < 0 || t >= j.bullets.length) return; const tmp = j.bullets[i]; j.bullets[i] = j.bullets[t]; j.bullets[t] = tmp; changed(); renderStep(); focusSoon('[data-act="moveBullet"][data-arg="' + id + '"][data-arg2="' + t + '"][data-arg3="' + dir + '"]'); },
+  buildBullet: id => {
+    const x = ($('#bx-' + id).value || '').trim(), yv = ($('#by-' + id).value || '').trim(), z = ($('#bz-' + id).value || '').trim().replace(/^by\s+/i, '');
+    if (!x){ toast('Start with what you accomplished.'); $('#bx-' + id).focus(); return; }
+    let s = x.charAt(0).toUpperCase() + x.slice(1);
+    if (yv) s += ' ' + yv;
+    if (z) s += (yv ? ', by ' : ' by ') + z;
+    s = s.replace(/[\s,]+$/, ''); if (!/[.!?]$/.test(s)) s += '.';
+    const j = findJob(id), last = j.bullets.length - 1;
+    if (!j.bullets[last].trim()) j.bullets[last] = s; else j.bullets.push(s);
+    ui.builder[id] = true; changed(); renderStep(); toast('Line added. Edit it however you like.');
+  },
+  addEdu: () => { const e = blankEdu(); state.edu.push(e); ui.open[e.id] = true; changed(); renderStep(); focusSoon('#' + fid('edu.' + (state.edu.length - 1) + '.school')); },
+  delEdu: (id, a2, a3, btn) => armed(btn, () => { state.edu = state.edu.filter(e => e.id !== id); changed(); renderStep(); toast('School removed'); }),
+  moveEdu: (id, dir) => { if (moveIn(state.edu, id, +dir)){ changed(); renderStep(); } },
+  addCert: () => { state.certs.push(blankCert()); changed(); renderStep(); focusSoon('#' + fid('certs.' + (state.certs.length - 1) + '.name')); },
+  delCert: (id, a2, a3, btn) => armed(btn, () => { state.certs = state.certs.filter(x => x.id !== id); changed(); renderStep(); }),
+  addTrain: () => { state.training.push(blankTrain()); changed(); renderStep(); focusSoon('#' + fid('training.' + (state.training.length - 1) + '.name')); },
+  delTrain: (id, a2, a3, btn) => armed(btn, () => { state.training = state.training.filter(x => x.id !== id); changed(); renderStep(); }),
+  kwRemove: kw => { const t = state.target, l = kw.toLowerCase(); const ai = t.kwAdded.findIndex(k => k.toLowerCase() === l); if (ai >= 0) t.kwAdded.splice(ai, 1); else t.kwRemoved.push(kw); changed(); renderStep(); },
+  kwAdd: () => { const inp = $('#kwInput'); const v = clean(inp.value); if (!v) return; const t = state.target, l = v.toLowerCase(); t.kwRemoved = t.kwRemoved.filter(k => k.toLowerCase() !== l); if (!t.kwAdded.some(k => k.toLowerCase() === l)) t.kwAdded.push(v); changed(); renderStep(); focusSoon('#kwInput'); },
+  kwReset: () => { state.target.kwRemoved = []; changed(); renderStep(); },
+  pdf: () => { doLayoutNow(); if (!lastChecks.go){ renderStep(); toast('Something changed. Fix the HOLD items first.'); return; } saveFile(fileBase() + '.pdf', new Blob([buildPdf(lastL)], {type:'application/pdf'})); },
+  pdfDraft: () => { doLayoutNow(); saveFile(fileBase() + '_DRAFT.pdf', new Blob([buildPdf(lastL)], {type:'application/pdf'})); },
+  txt: () => { doLayoutNow(); saveFile(fileBase() + '.txt', plainText(lastL.mdl)); },
+  backup: () => saveFile(fileBase() + '_backup.json', JSON.stringify(state, null, 2)),
+  restore: () => $('#fileIn').click(),
+  startOver: (a, a2, a3, btn) => armed(btn, () => { state = blankState(); ui.open = {}; ui.builder = {}; ui.opt = {}; ui.proof = null; saveNow(); render(); window.scrollTo(0, 0); toast('Started over'); }),
+  proofread: () => proofread(),
+  acceptFix: i => {
+    const f = ui.proof && ui.proof.fixes[+i]; if (!f) return;
+    if (f.id === 'summary'){ if (state.summary.trim() === f.orig) state.summary = f.fixed; }
+    else { const parts = f.id.split(':'), j = findJob(parts[1]), k = +parts[2]; if (j && j.bullets[k] != null && j.bullets[k].trim() === f.orig) j.bullets[k] = f.fixed; }
+    f.done = true; doLayoutNow(); scheduleSave(); renderStep();
+  },
+  dismissFix: i => { const f = ui.proof && ui.proof.fixes[+i]; if (f){ f.done = true; renderStep(); } },
+  copy: (id, a2, a3, btn) => { const el = $('#' + id); if (el) copyText(el.value, btn); },
+  togglePreview: () => { document.body.classList.toggle('show-preview'); updateToggle(); window.scrollTo(0, 0); }
+};
+
+/* ---------- events ---------- */
+const form = $('#form');
+form.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.ui || !el.dataset.path || el.matches('select, input[type=checkbox]')) return;
+  setPath(el.dataset.path, el.value);
+  if (el.tagName === 'TEXTAREA') autogrow(el);
+  changed();
+});
+form.addEventListener('change', e => {
+  const el = e.target;
+  if (!el.dataset.path) return;
+  if (el.matches('select')) setPath(el.dataset.path, el.value);
+  else if (el.type === 'checkbox') setPath(el.dataset.path, el.checked);
+  else return;
+  if (el.hasAttribute('data-rerender')){ renderStep(); focusSoon('[data-path="' + el.dataset.path + '"]'); }
+  changed();
+});
+form.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'kwInput'){ e.preventDefault(); ACTIONS.kwAdd(); }
+});
+form.addEventListener('toggle', e => {
+  const d = e.target; if (!d.matches) return;
+  if (d.matches('details[data-entry]')) ui.open[d.dataset.entry] = d.open;
+  else if (d.matches('details[data-builder]')) ui.builder[d.dataset.builder] = d.open;
+  else if (d.matches('details[data-opt]')) ui.opt[d.dataset.opt] = d.open;
+  if (d.open) d.querySelectorAll('textarea:not([readonly])').forEach(autogrow);
+}, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const fn = ACTIONS[b.dataset.act]; if (!fn) return;
+  e.preventDefault(); fn(b.dataset.arg, b.dataset.arg2, b.dataset.arg3, b);
+});
+$('#fileIn').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const o = JSON.parse(String(r.result));
+      if (!o || typeof o !== 'object' || !o.contact || !Array.isArray(o.jobs)) throw new Error('shape');
+      state = normalize(o); state.step = REVIEW; ui.open = {}; ui.proof = null; saveNow(); render(); toast('Backup loaded');
+    } catch (err) { toast('That file isn\u2019t a backup from this builder.'); }
+    e.target.value = '';
+  };
+  r.onerror = () => toast('Couldn\u2019t read that file.');
+  r.readAsText(file);
+});
+window.addEventListener('resize', () => { clearTimeout(window.__rz); window.__rz = setTimeout(() => form.querySelectorAll('textarea:not([readonly])').forEach(autogrow), 150); });
+
+/* ---------- start ---------- */
+setSave(storageOk ? 'Saved in this browser' : 'Not saving here. Save a backup file on the last step.', !storageOk);
+render();
+window.__frb = {state: () => state, layout: () => layout(state), pdf: () => buildPdf(layout(state)), checks: () => lastChecks, load: o => { state = normalize(o); render(); }};
+})();
+</script>
+</body>
+</html>
