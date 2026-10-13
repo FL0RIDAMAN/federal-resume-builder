@@ -93,6 +93,16 @@ fieldset[disabled]{opacity:.5}
 .count{margin:-12px 0 20px;font-size:.875rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .note{border-left:3px solid var(--signal);padding:12px 16px;background:var(--surface);border-radius:0 8px 8px 0;margin:4px 0 24px;font-size:.9375rem;max-width:62ch}
 .note strong{display:block;margin-bottom:2px}
+.printas{margin:-10px 0 22px;font-size:.875rem;color:var(--ink-2);padding:8px 12px;border-radius:8px;background:var(--rule-2);max-width:62ch}
+.printas b{color:var(--ink);font-weight:650}
+.printas:empty{display:none}
+.fs .printas{margin-top:12px}
+.docs{margin:-12px 0 14px}
+.fs .check{margin:0 0 10px}
+.headprev{margin:30px 0 24px}
+.headprev-box{background:#fff;color:#000;border:1px solid var(--rule);border-radius:4px;padding:16px 18px;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.45;box-shadow:var(--shadow);overflow-wrap:anywhere}
+.headprev-box b{display:block;font-size:17px;margin-bottom:2px}
+.headprev-box span{display:block}
 
 /* Entries */
 .entries{display:flex;flex-direction:column;gap:12px;margin:0 0 16px}
@@ -271,17 +281,43 @@ const STEPS = [
   {label:'Education'}, {label:'Certifications'}, {label:'Skills and extras'}, {label:'Go / No-go'}
 ];
 const REVIEW = 7;
+const US_STATES = [['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['PR','Puerto Rico'],['GU','Guam'],['VI','U.S. Virgin Islands'],['AS','American Samoa'],['MP','Northern Mariana Islands']];
+const STATE_OPTS = [['','Choose']].concat(US_STATES.map(x => [x[0], x[1]]), [['INTL','Outside the U.S. (put the country in City)']]);
+const stateOut = v => v === 'INTL' ? '' : v;
+function toStateCode(v){ v = String(v || '').trim(); if (!v) return ''; const u = v.toUpperCase().replace(/\./g, ''); const hit = US_STATES.find(x => x[0] === u || x[1].toUpperCase() === u); return hit ? hit[0] : v; }
+const VET = {
+  tp:{label:'5-point: veteran with no service-connected disability rating', print:'5-point (TP)', docs:'DD-214 (Member 4 copy) showing your dates of service and an honorable discharge.'},
+  cps:{label:'10-point: service-connected disability rated 30% or more', print:'10-point (CPS)', docs:'DD-214, an SF-15, and your VA disability rating letter.'},
+  cp:{label:'10-point: service-connected disability rated 10% to 29%', print:'10-point (CP)', docs:'DD-214, an SF-15, and your VA disability rating letter.'},
+  xp:{label:'10-point: disability rated under 10%, or Purple Heart', print:'10-point (XP)', docs:'DD-214, an SF-15, and your VA letter or Purple Heart documentation.'},
+  xpd:{label:'10-point derived: spouse, widow or widower, or mother of a veteran', print:'10-point derived (XP)', docs:'An SF-15, the veteran\u2019s DD-214, and the other documents the SF-15 lists for your situation.'},
+  ssp:{label:'Sole survivorship', print:'Sole survivorship (SSP)', docs:'DD-214 showing a sole survivorship discharge.'}
+};
+const CL_LEVEL = {confidential:'Confidential', secret:'Secret', ts:'Top Secret', tssci:'Top Secret/SCI', q:'DOE Q', l:'DOE L', ptmod:'Moderate Risk', pthigh:'High Risk'};
+const CL_STATUS = {active:'active', interim:'interim', current:'current, eligible for reinstatement', previous:'previously held'};
+const CL_POLY = {ci:'CI polygraph', fs:'full-scope polygraph'};
+const TENURE = {career:'career', conditional:'career-conditional', excepted:'excepted service'};
+const PATHS = [['pathStudent','Current student','Current student'],['pathGrad','Recent graduate (finished a degree in the last 2 years)','Recent graduate'],['pathSpouse','Military spouse','Military spouse'],['pathPC','Returned Peace Corps Volunteer','Returned Peace Corps Volunteer'],['pathVista','Former AmeriCorps VISTA member','Former AmeriCorps VISTA member']];
+const PAY_PLANS = [['','Choose'],['GS','GS (General Schedule)'],['GG','GG (GS-like, excepted service)'],['GL','GL (GS law enforcement)'],['WG','WG (Wage Grade)'],['WL','WL (Wage Leader)'],['WS','WS (Wage Supervisor)'],['NH','NH (DoD AcqDemo)'],['ZP','ZP (Commerce)'],['AD','AD (Administratively determined)'],['ES','ES (Senior Executive Service)'],['other','Other (type it)']];
+const GRADES = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','I','II','III','IV','V'];
+const DEGREES = ['High school diploma','GED','Associate of Arts','Associate of Science','Associate of Applied Science','Bachelor of Arts','Bachelor of Science','Bachelor of Fine Arts','Master of Arts','Master of Science','Master of Engineering','Master of Business Administration','Master of Public Administration','Doctor of Philosophy','Doctor of Engineering','Juris Doctor','Doctor of Medicine','Certificate'];
+const LANG_LEVELS = [['','Choose a level'],['elementary','Elementary (basic phrases)'],['limited','Limited working (everyday conversation)'],['professional','Professional working (can use it on the job)'],['full','Full professional (fluent at work)'],['native','Native or bilingual']];
+const LANG_PRINT = {elementary:'elementary', limited:'limited working', professional:'professional working', full:'full professional', native:'native or bilingual'};
+const SERIES = [['0018','Safety and Occupational Health Management'],['0080','Security Administration'],['0201','Human Resources Management'],['0301','Miscellaneous Administration and Program'],['0340','Program Management'],['0341','Administrative Officer'],['0343','Management and Program Analysis'],['0346','Logistics Management'],['0501','Financial Administration and Program'],['0510','Accounting'],['0560','Budget Analysis'],['0801','General Engineering'],['0802','Engineering Technical'],['0803','Safety Engineering'],['0806','Materials Engineering'],['0810','Civil Engineering'],['0819','Environmental Engineering'],['0830','Mechanical Engineering'],['0850','Electrical Engineering'],['0854','Computer Engineering'],['0855','Electronics Engineering'],['0856','Electronics Technical'],['0861','Aerospace Engineering'],['0893','Chemical Engineering'],['0896','Industrial Engineering'],['0905','General Attorney'],['1035','Public Affairs'],['1082','Writing and Editing'],['1102','Contracting'],['1301','General Physical Science'],['1310','Physics'],['1311','Physical Science Technician'],['1320','Chemistry'],['1330','Astronomy and Space Science'],['1340','Meteorology'],['1515','Operations Research'],['1520','Mathematics'],['1529','Mathematical Statistics'],['1550','Computer Science'],['1701','General Education and Training'],['1712','Training Instruction'],['1910','Quality Assurance'],['2003','Supply Program Management'],['2181','Aircraft Operation'],['2210','Information Technology Management']];
+const LANGS = ['Spanish','French','German','Italian','Portuguese','Russian','Ukrainian','Arabic','Farsi','Hebrew','Mandarin Chinese','Cantonese','Japanese','Korean','Vietnamese','Tagalog','Hindi','Urdu','Polish','American Sign Language'];
 
-const blankJob = () => ({id:uid(), kind:'civilian', title:'', rank:'', employer:'', city:'', state:'', payPlan:'GS', series:'', grade:'', startM:'', startY:'', endM:'', endY:'', current:false, hours:'', salary:'', salaryBasis:'per year', supName:'', supPhone:'', supContact:'', bullets:['']});
-const blankEdu = () => ({id:uid(), school:'', city:'', state:'', degree:'', major:'', compM:'', compY:'', expected:false, gpa:'', gpaScale:'4.0', coursework:''});
+const blankJob = () => ({id:uid(), kind:'civilian', title:'', rank:'', employer:'', city:'', state:'', payPlan:'GS', payPlanOther:'', series:'', grade:'', startM:'', startY:'', endM:'', endY:'', current:false, hours:'', salary:'', salaryBasis:'per year', supName:'', supPhone:'', supContact:'', bullets:['']});
+const blankEdu = () => ({id:uid(), school:'', city:'', state:'', degreeSel:'', degree:'', major:'', compM:'', compY:'', expected:false, gpa:'', gpaScale:'4.0', coursework:''});
 const blankCert = () => ({id:uid(), name:'', issuer:'', issM:'', issY:'', expM:'', expY:''});
+const blankLang = () => ({id:uid(), name:'', level:''});
 const blankTrain = () => ({id:uid(), name:'', provider:'', compM:'', compY:'', hours:''});
 const blankState = () => ({
   v:1, step:0,
   target:{title:'', seriesGrade:'', announcement:'', reqText:'', kwAdded:[], kwRemoved:[]},
-  contact:{name:'', email:'', phone:'', city:'', state:'', citizen:'', vet:'', clearance:'', status:''},
+  contact:{name:'', email:'', phone:'', city:'', state:'', citizen:'', vetCode:'', vet:'', clLevel:'', clStatus:'', clPoly:'', clearance:'', fedEmp:'', fedTenure:'', fedGrade:'', pathStudent:false, pathGrad:false, pathSpouse:false, pathPC:false, pathVista:false, status:''},
   summary:'', jobs:[blankJob()], edu:[blankEdu()], certs:[], training:[],
-  skills:'', languages:'', awards:'', pubs:'', additional:'',
+  skills:'', languages:'', langs:[], awards:'', pubs:'', additional:'',
+  avail:{schedule:'', relocate:'', travel:''},
   opts:{eduFirst:false}
 });
 
@@ -310,6 +346,23 @@ function normalize(o){
   s.training = s.training.filter(x => x && typeof x === 'object').map(e => merge(blankTrain(), e));
   s.target.kwAdded = strs(s.target.kwAdded);
   s.target.kwRemoved = strs(s.target.kwRemoved);
+  s.langs = s.langs.filter(x => x && typeof x === 'object').map(l => merge(blankLang(), l));
+  if (!s.langs.length && s.languages.trim()) s.langs = s.languages.split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => Object.assign(blankLang(), {name:x}));
+  s.languages = '';
+  const c = s.contact;
+  if (!c.vetCode && c.vet.trim()) c.vetCode = 'legacy';
+  if (c.vetCode && c.vetCode !== 'legacy' && !VET[c.vetCode]) c.vetCode = '';
+  if (!c.clLevel && c.clearance.trim()) c.clLevel = 'other';
+  c.state = toStateCode(c.state);
+  s.jobs.forEach(j => {
+    j.state = toStateCode(j.state);
+    const pp = j.payPlan.trim();
+    if (pp && pp !== 'other'){ const up = pp.toUpperCase(); if (PAY_PLANS.some(x => x[0] === up)) j.payPlan = up; else { j.payPlanOther = up; j.payPlan = 'other'; } }
+  });
+  s.edu.forEach(e => {
+    e.state = toStateCode(e.state);
+    if (!e.degreeSel && e.degree.trim()){ const d = DEGREES.find(x => x.toLowerCase() === e.degree.trim().toLowerCase()); if (d){ e.degreeSel = d; e.degree = ''; } else e.degreeSel = 'other'; }
+  });
   if (!(s.step >= 0 && s.step < STEPS.length)) s.step = 0;
   return s;
 }
@@ -376,10 +429,12 @@ const words = s => (String(s || '').trim().match(/\S+/g) || []).length;
 
 /* ---------- field logic ---------- */
 const jobEmpty = j => !(j.title.trim() || j.employer.trim() || j.startY || j.hours.trim() || j.bullets.some(b => b.trim()));
-const eduEmpty = e => !(e.school.trim() || e.degree.trim() || e.major.trim() || e.compY);
+const degreeOf = e => e.degreeSel === 'other' ? e.degree.trim() : (e.degreeSel || '');
+const eduEmpty = e => !(e.school.trim() || degreeOf(e) || e.major.trim() || e.compY);
 function seriesGrade(j){
   let ser = j.series.trim(); if (/^\d{3}$/.test(ser)) ser = '0' + ser;
-  return joinNE('-', j.payPlan.trim().toUpperCase(), ser, j.grade.trim().toUpperCase());
+  const pp = (j.payPlan === 'other' ? j.payPlanOther : j.payPlan).trim().toUpperCase();
+  return joinNE('-', pp, ser, j.grade.trim().toUpperCase());
 }
 function jobProblems(j){
   const p = [];
@@ -395,9 +450,10 @@ function jobProblems(j){
   if (!h) p.push('add hours per week');
   else if (!/^\d{1,3}(\.\d+)?$/.test(h) || +h < 1 || +h > 168) p.push('hours per week should be a number from 1 to 168');
   if (j.kind === 'federal'){
-    if (!/^[A-Za-z]{2}$/.test(j.payPlan.trim())) p.push('add the 2-letter pay plan (for example GS)');
+    const pp = (j.payPlan === 'other' ? j.payPlanOther : j.payPlan).trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(pp)) p.push(j.payPlan === 'other' ? 'type the 2-letter pay plan' : 'choose the pay plan (for example GS)');
     if (!/^\d{3,4}$/.test(j.series.trim())) p.push('add the 4-digit series (for example 0861)');
-    if (!/^(\d{1,2}|[IVX]{1,4})$/i.test(j.grade.trim())) p.push('add the grade (for example 12)');
+    if (pp !== 'ES' && pp !== 'AD' && !/^(\d{1,2}|[IVX]{1,4})$/i.test(j.grade.trim())) p.push('choose the grade (for example 12)');
   }
   if (!j.bullets.some(b => b.trim())) p.push('add at least one accomplishment');
   return p;
@@ -405,7 +461,7 @@ function jobProblems(j){
 function eduProblems(e){
   const p = [];
   if (!e.school.trim()) p.push('add the school name');
-  if (!e.degree.trim()) p.push('add the degree type');
+  if (!degreeOf(e)) p.push(e.degreeSel === 'other' ? 'type the degree name' : 'choose the degree type');
   const has = e.compM && e.compY;
   if (!has) p.push('add the completion month and year');
   if (has && !e.expected && ym(e.compM, e.compY) > NOW_YM) p.push('the completion date is in the future (check "Not finished yet")');
@@ -433,12 +489,45 @@ const KIND_HINT = {
   volunteer: 'Volunteer work counts when it shows you can do this job. Give your real average hours per week.'
 };
 
+/* ---------- official wording from plain-language choices ---------- */
+function vetText(c, C){ if (c.vetCode === 'legacy') return C(c.vet); const v = VET[c.vetCode]; return v ? v.print : ''; }
+function clearanceText(c, C){
+  const lvl = c.clLevel === 'other' ? C(c.clearance) : (CL_LEVEL[c.clLevel] || '');
+  if (!lvl) return '';
+  const bits = [CL_STATUS[c.clStatus], (c.clLevel === 'ts' || c.clLevel === 'tssci') ? CL_POLY[c.clPoly] : ''].filter(Boolean);
+  const tail = bits.length ? ' (' + bits.join(', ') + ')' : '';
+  return (/^pt/.test(c.clLevel) ? 'Public trust: ' : 'Security clearance: ') + lvl + tail;
+}
+function fedText(c, C){
+  const parts = [];
+  if (c.fedEmp === 'current' || c.fedEmp === 'former'){
+    let t = c.fedEmp === 'current' ? 'Current federal employee' : 'Former federal employee';
+    if (TENURE[c.fedTenure]) t += ' (' + TENURE[c.fedTenure] + ')';
+    const g = C(c.fedGrade); if (g) t += (c.fedEmp === 'current' ? ', ' : ', highest grade held ') + g;
+    parts.push(t);
+  }
+  PATHS.forEach(x => { if (c[x[0]]) parts.push(x[2]); });
+  const o = C(c.status); if (o) parts.push(o);
+  return parts.join(' | ');
+}
+function langText(st, C){ return st.langs.filter(l => C(l.name)).map(l => C(l.name) + (LANG_PRINT[l.level] ? ' (' + LANG_PRINT[l.level] + ' proficiency)' : '')).join('; '); }
+function availText(a){
+  const parts = [];
+  if (a.schedule) parts.push({full:'available for full-time work', part:'available for part-time work', either:'available for full-time or part-time work'}[a.schedule] || '');
+  if (a.relocate === 'yes') parts.push('willing to relocate');
+  if (a.travel) parts.push({'25':'willing to travel up to 25% of the time', '50':'willing to travel up to 50% of the time', '75':'willing to travel 75% of the time or more'}[a.travel] || '');
+  const t = parts.filter(Boolean).join('; ');
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) + '.' : '';
+}
+
 /* ---------- content model (shared by PDF, preview, and text) ---------- */
 function model(st, C){
   const c = st.contact, t = st.target;
   const head = {name: C(c.name), lines: []};
-  head.lines.push(joinNE(' | ', joinNE(', ', C(c.city), C(c.state)), C(c.email), C(fmtPhone(c.phone))));
-  head.lines.push(joinNE(' | ', c.citizen === 'yes' ? 'U.S. Citizen' : '', C(c.vet) ? "Veterans' preference: " + C(c.vet) : '', C(c.clearance) ? 'Security clearance: ' + C(c.clearance) : '', C(c.status)));
+  head.lines.push(joinNE(' | ', joinNE(', ', C(c.city), C(stateOut(c.state))), C(c.email), C(fmtPhone(c.phone))));
+  const vt = vetText(c, C);
+  head.lines.push(joinNE(' | ', c.citizen === 'yes' ? 'U.S. Citizen' : '', vt ? "Veterans' preference: " + vt : '', clearanceText(c, C)));
+  head.lines.push(fedText(c, C));
   const tp = joinNE(', ', C(t.title), C(t.seriesGrade)), an = C(t.announcement);
   if (tp || an) head.lines.push('Applying for: ' + joinNE(' | ', tp, an ? 'Announcement ' + an : ''));
   head.lines = head.lines.filter(Boolean);
@@ -452,7 +541,7 @@ function model(st, C){
     if (j.kind === 'military' && C(j.rank)) title += ' (' + C(j.rank) + ')';
     if (j.kind === 'federal' && seriesGrade(j)) title += ', ' + seriesGrade(j);
     if (j.kind === 'volunteer' && !/volunteer/i.test(title)) title += ' (Volunteer)';
-    const emp = joinNE(', ', C(j.employer), C(j.city), C(j.state));
+    const emp = joinNE(', ', C(j.employer), C(j.city), C(stateOut(j.state)));
     const start = j.startM && j.startY ? j.startM + '/' + j.startY : '';
     const end = j.current ? 'Present' : (j.endM && j.endY ? j.endM + '/' + j.endY : '');
     const dates = start || end ? joinNE(' – ', start, end) : '';
@@ -463,10 +552,10 @@ function model(st, C){
     return {k:'entry', title, lines:[emp, joinNE(' | ', dates, hrs, sal), sup].filter(Boolean), bullets: j.bullets.map(b => bulletText(C(b))).filter(Boolean)};
   })};
   const edu = {title:'Education', items: st.edu.filter(e => !eduEmpty(e)).map(e => {
-    const deg = joinNE(', ', C(e.degree), C(e.major)) || 'Degree';
+    const deg = joinNE(', ', C(degreeOf(e)), C(e.major)) || 'Degree';
     const when = e.compM && e.compY ? (e.expected ? 'Expected ' : 'Completed ') + e.compM + '/' + e.compY : '';
     const gpa = C(e.gpa) ? 'GPA ' + C(e.gpa) + (C(e.gpaScale) ? '/' + C(e.gpaScale) : '') : '';
-    const meta = joinNE(' | ', joinNE(', ', C(e.school), C(e.city), C(e.state)), when, gpa);
+    const meta = joinNE(' | ', joinNE(', ', C(e.school), C(e.city), C(stateOut(e.state))), when, gpa);
     return {k:'entry', title:deg, lines:[meta, C(e.coursework) ? 'Relevant coursework: ' + C(e.coursework) : ''].filter(Boolean), bullets:[]};
   })};
   const order = st.opts.eduFirst ? [edu, exp] : [exp, edu];
@@ -484,10 +573,11 @@ function model(st, C){
   if (tr.length) secs.push({title:'Training', items: tr});
   const listSec = (title, src, k) => { const it = lines(src).map(C).filter(Boolean).map(text => ({k, text})); if (it.length) secs.push({title, items: it}); };
   listSec('Skills', st.skills, 'para');
-  listSec('Languages', st.languages, 'para');
+  const lt = langText(st, C); if (lt) secs.push({title:'Languages', items:[{k:'para', text:lt}]});
   listSec('Awards and Honors', st.awards, 'bullet');
   listSec('Publications and Presentations', st.pubs, 'bullet');
-  const add = paras(st.additional).map(C).filter(Boolean);
+  const av = availText(st.avail);
+  const add = (av ? [av] : []).concat(paras(st.additional).map(C).filter(Boolean));
   if (add.length) secs.push({title:'Additional Information', items: add.map(text => ({k:'para', text}))});
   return {head, secs};
 }
@@ -666,7 +756,9 @@ function runChecks(L){
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c.email.trim())) cm.push('Check the email address. It should look like name@example.com.');
   if (!c.phone.trim()) cm.push('Add your phone number.');
   else if (digits(c.phone).length < 10) cm.push('Check the phone number. It needs at least 10 digits.');
-  req.push({label:'Contact information', ok:!cm.length, details:cm, step:1});
+  if (c.clLevel === 'other' && !c.clearance.trim()) cm.push('Type your clearance, or choose \u201cNo clearance.\u201d');
+  if (c.clLevel && !c.clStatus) cm.push('Choose your clearance status.');
+  req.push({label:'Contact and header details', ok:!cm.length, details:cm, step:1});
 
   const jobs = s.jobs.filter(j => !jobEmpty(j)), em = [];
   if (!jobs.length) em.push('Add at least one job, volunteer role, or military service.');
@@ -680,6 +772,9 @@ function runChecks(L){
   const crm = [];
   s.certs.forEach((x, i) => { if (!x.name.trim() && (x.issuer.trim() || x.issY || x.expY)) crm.push('Certification ' + (i + 1) + ': add its name.'); });
   s.training.forEach((x, i) => { if (!x.name.trim() && (x.provider.trim() || x.compY || x.hours.trim())) crm.push('Training ' + (i + 1) + ': add its name.'); if (x.hours.trim() && !/^\d+(\.\d+)?$/.test(x.hours.trim())) crm.push((x.name.trim() || 'Training ' + (i + 1)) + ': hours should be a number.'); });
+  const lm = [];
+  s.langs.forEach((l, i) => { if (l.name.trim() && !l.level) lm.push(l.name.trim() + ': choose how well you know it.'); if (!l.name.trim() && l.level) lm.push('Language ' + (i + 1) + ': add the language name.'); });
+  if (s.langs.length) req.push({label:'Languages', ok:!lm.length, details:lm, step:6});
   if (s.certs.length || s.training.length) req.push({label:'Certifications and training', ok:!crm.length, details:crm, step:5});
 
   const n = L.pages.length;
@@ -786,9 +881,15 @@ function tf(o){
     : '<input id="' + id + '" type="' + (o.type || 'text') + '" data-path="' + o.path + '" value="' + esc(v) + '"' + desc + ' placeholder="' + esc(o.ph || '') + '" ' + (o.attrs || '') + '>';
   return '<div class="field ' + (o.cls || '') + '"><label for="' + id + '">' + o.label + '</label>' + (o.hint ? '<p class="hint" id="' + hid + '">' + o.hint + '</p>' : '') + ctl + '</div>';
 }
+function optList(list, v){
+  v = v == null ? '' : String(v);
+  if (v !== '' && !list.some(p => p[0] === v)) list = [[v, v]].concat(list);
+  return list.map(p => '<option value="' + esc(p[0]) + '"' + (v === p[0] ? ' selected' : '') + '>' + esc(p[1]) + '</option>').join('');
+}
+const pa = id => '<p class="printas" id="' + id + '" aria-live="polite"></p>';
 function sel(o){
   const id = fid(o.path), v = getPath(o.path);
-  const opts = o.opts.map(p => '<option value="' + esc(p[0]) + '"' + (String(v) === p[0] ? ' selected' : '') + '>' + esc(p[1]) + '</option>').join('');
+  const opts = optList(o.opts, v);
   return '<div class="field"><label for="' + id + '">' + o.label + '</label>' + (o.hint ? '<p class="hint">' + o.hint + '</p>' : '') + '<select id="' + id + '" data-path="' + o.path + '"' + (o.rerender ? ' data-rerender' : '') + '>' + opts + '</select></div>';
 }
 function cb(o){ return '<label class="check"><input type="checkbox" data-path="' + o.path + '"' + (getPath(o.path) ? ' checked' : '') + (o.rerender ? ' data-rerender' : '') + '> ' + o.label + '</label>'; }
@@ -822,16 +923,37 @@ function stepJob(){
   + navHTML() + '</div>';
 }
 function stepContact(){
-  return '<div class="step"><h2>Contact</h2><p class="lede">This goes at the top of the page.</p>'
+  return '<div class="step"><h2>Contact</h2><p class="lede">This goes at the top of the page. Where there\u2019s a menu, pick the plain-language answer and the builder writes the official wording for you.</p>'
   + tf({path:'contact.name', label:'What is your full name?', ph:'Jordan A. Rivera', attrs:'autocomplete="name"'})
   + '<div class="row">' + tf({path:'contact.email', type:'email', label:'Email', ph:'name@example.com', attrs:'autocomplete="email" inputmode="email"'}) + tf({path:'contact.phone', type:'tel', label:'Phone', ph:'(813) 555-0142', attrs:'autocomplete="tel"'}) + '</div>'
-  + '<div class="row">' + tf({path:'contact.city', label:'City (optional)', ph:'Houston'}) + tf({path:'contact.state', label:'State (optional)', ph:'TX'}) + '</div>'
+  + '<div class="row">' + tf({path:'contact.city', label:'City (optional)', ph:'Houston'}) + sel({path:'contact.state', label:'State (optional)', opts:STATE_OPTS}) + '</div>'
   + sel({path:'contact.citizen', label:'Are you a U.S. citizen?', hint:'Most NASA civil service jobs require citizenship. Choosing yes prints \u201cU.S. Citizen\u201d at the top.', opts:[['','Choose one'],['yes','Yes'],['no','No (leave it off)']]})
-  + tf({path:'contact.vet', label:'Veterans\u2019 preference (optional)', hint:'Only if you claim it. You will also upload proof, such as a DD-214, when you apply.', ph:'10-point preference'})
-  + tf({path:'contact.clearance', label:'Security clearance (optional)', hint:'Level and status only. Never include classified details.', ph:'Secret, active'})
-  + tf({path:'contact.status', label:'Federal status or hiring path (optional)', hint:'Leave blank if it doesn\u2019t apply.', ph:'Current federal employee'})
+  + contactExtras()
   + '<div class="note"><strong>Leave these off</strong>Social Security number, date of birth or age, photos, marital status, religion, and other personal details.</div>'
   + navHTML() + '</div>';
+}
+function contactExtras(){
+  const c = state.contact, v = VET[c.vetCode];
+  const vetOpts = [['','No, or not claiming it']].concat(Object.keys(VET).map(k => [k, VET[k].label]));
+  if (c.vetCode === 'legacy') vetOpts.push(['legacy', 'As you typed it earlier: ' + c.vet]);
+  const poly = c.clLevel === 'ts' || c.clLevel === 'tssci';
+  return '<h3>Veterans\u2019 preference</h3>'
+  + sel({path:'contact.vetCode', label:'Are you claiming veterans\u2019 preference?', rerender:true, opts:vetOpts, hint:'Pick the one that fits. Your resume shows the official category.'})
+  + (v ? '<p class="hint docs"><b>Upload when you apply:</b> ' + esc(v.docs) + ' Still on active duty? If you\u2019ll separate within 120 days, a statement of service from your unit can stand in for the DD-214.</p>' : '')
+  + pa('pa-vet')
+  + '<h3>Security clearance</h3>'
+  + sel({path:'contact.clLevel', label:'Do you hold a clearance?', rerender:true, opts:[['','No clearance'],['confidential','Confidential'],['secret','Secret'],['ts','Top Secret'],['tssci','Top Secret/SCI'],['q','DOE Q'],['l','DOE L'],['ptmod','Public Trust, Moderate Risk (not a clearance)'],['pthigh','Public Trust, High Risk (not a clearance)'],['other','Something else (type it)']], hint:'Level and status only. Never include classified details.'})
+  + (c.clLevel === 'other' ? tf({path:'contact.clearance', label:'Type your clearance', ph:'NATO Secret'}) : '')
+  + (c.clLevel ? sel({path:'contact.clStatus', label:'What is its status?', hint:'Not sure? Your former security officer can tell you.', opts:[['','Choose one'],['active','Active (I hold it now)'],['interim','Interim'],['current','Current (not in use, eligible for reinstatement)'],['previous','Previously held (expired)']]}) : '')
+  + (poly ? sel({path:'contact.clPoly', label:'Polygraph (optional)', opts:[['','None, or leave it off'],['ci','Counterintelligence (CI) polygraph'],['fs','Full-scope polygraph']]}) : '')
+  + pa('pa-cl')
+  + '<h3>Federal status and hiring paths</h3>'
+  + sel({path:'contact.fedEmp', label:'Have you worked as a federal civilian employee?', rerender:true, hint:'Military service doesn\u2019t count here; it goes under Experience.', opts:[['','No'],['current','Yes, I work for the federal government now'],['former','Yes, in the past']]})
+  + (c.fedEmp ? '<div class="row">' + sel({path:'contact.fedTenure', label:'Appointment type', opts:[['','Not sure, or leave it off'],['career','Career (tenure 1)'],['conditional','Career-conditional (tenure 2)'],['excepted','Excepted service']]}) + tf({path:'contact.fedGrade', label: c.fedEmp === 'current' ? 'Current grade' : 'Highest grade held', ph:'GS-0861-11'}) + '</div><p class="hint" style="margin-top:-12px;margin-bottom:20px">Tenure is in block 24 of your SF-50.' + (c.fedEmp === 'former' ? ' Career employees can be reinstated at any time; career-conditional employees, within 3 years of leaving.' : '') + '</p>' : '')
+  + '<fieldset class="fs"><legend class="q">Do any of these apply? (optional)</legend><p class="hint">Check all that fit.</p>' + PATHS.map(x => cb({path:'contact.' + x[0], label:esc(x[1])})).join('') + '</fieldset>'
+  + tf({path:'contact.status', label:'Anything else for the top of your resume? (optional)', hint:'Short and factual, like a hiring path the announcement names.'})
+  + pa('pa-fed')
+  + '<div class="headprev"><p class="q">How the top of your resume reads</p><div class="headprev-box" id="pa-head"></div></div>';
 }
 function stepSummary(){
   return '<div class="step"><h2>Summary</h2><p class="lede">Optional, but it\u2019s the first thing a reviewer reads, so it\u2019s worth two or three strong sentences.</p>'
@@ -858,8 +980,13 @@ function jobHTML(j, i){
   + tf({path:p + '.title', label:'What was your official job title?', hint:'Use the title from your paperwork. If it isn\u2019t self-explanatory, add a plain version in parentheses.', ph:titlePh})
   + (j.kind === 'military' ? tf({path:p + '.rank', label:'Rank (optional)', ph:'SGT / E-5', cls:'narrow'}) : '')
   + tf({path:p + '.employer', label: j.kind === 'military' ? 'Branch and unit' : 'Who was the employer?', ph:empPh})
-  + '<div class="row">' + tf({path:p + '.city', label:'City', ph:'Houston'}) + tf({path:p + '.state', label:'State', ph:'TX'}) + '</div>'
-  + (j.kind === 'federal' ? '<fieldset class="fs"><legend class="q">Pay plan, series, and grade</legend><div class="row3"><div><label for="' + fid(p + '.payPlan') + '">Pay plan</label><input type="text" id="' + fid(p + '.payPlan') + '" data-path="' + p + '.payPlan" value="' + esc(j.payPlan) + '" maxlength="2" placeholder="GS"></div><div><label for="' + fid(p + '.series') + '">Series</label><input type="text" id="' + fid(p + '.series') + '" data-path="' + p + '.series" value="' + esc(j.series) + '" maxlength="4" inputmode="numeric" placeholder="0861"></div><div><label for="' + fid(p + '.grade') + '">Grade</label><input type="text" id="' + fid(p + '.grade') + '" data-path="' + p + '.grade" value="' + esc(j.grade) + '" maxlength="4" placeholder="12"></div></div></fieldset>' : '')
+  + '<div class="row">' + tf({path:p + '.city', label:'City', ph:'Houston'}) + sel({path:p + '.state', label:'State', opts:STATE_OPTS}) + '</div>'
+  + (j.kind === 'federal' ? '<fieldset class="fs"><legend class="q">Pay plan, series, and grade</legend><div class="row3">'
+    + '<div><label for="' + fid(p + '.payPlan') + '">Pay plan</label><select id="' + fid(p + '.payPlan') + '" data-path="' + p + '.payPlan" data-rerender>' + optList(PAY_PLANS, j.payPlan) + '</select></div>'
+    + '<div><label for="' + fid(p + '.series') + '">Series</label><input type="text" id="' + fid(p + '.series') + '" data-path="' + p + '.series" value="' + esc(j.series) + '" maxlength="4" inputmode="numeric" list="series-list" placeholder="0861"></div>'
+    + '<div><label for="' + fid(p + '.grade') + '">Grade</label><select id="' + fid(p + '.grade') + '" data-path="' + p + '.grade">' + optList([['','Choose']].concat(GRADES.map(g => [g, g])), j.grade) + '</select></div></div>'
+    + (j.payPlan === 'other' ? '<div class="field" style="margin:12px 0 0"><label for="' + fid(p + '.payPlanOther') + '">Type the 2-letter pay plan</label><input type="text" id="' + fid(p + '.payPlanOther') + '" data-path="' + p + '.payPlanOther" value="' + esc(j.payPlanOther) + '" maxlength="2" placeholder="GP" class="narrow" style="max-width:120px"></div>' : '')
+    + pa('pa-sg-' + j.id) + '</fieldset>' : '')
   + '<div class="row">' + myField('When did you start?', p + '.startM', p + '.startY') + myField('When did it end?', p + '.endM', p + '.endY', j.current) + '</div>'
   + cb({path:p + '.current', label:'I still work here', rerender:true})
   + tf({path:p + '.hours', label:'How many hours a week did you work?', hint:'Your typical week. Part-time counts; just be accurate.', ph:'40', cls:'narrow', attrs:'inputmode="decimal"'})
@@ -877,6 +1004,7 @@ function jobHTML(j, i){
 function stepExperience(){
   return '<div class="step"><h2>Experience</h2><p class="lede">Add each job that relates to this announcement, newest first. Volunteer work and military service count. Every entry needs dates, hours per week, and what you accomplished.</p>'
   + '<div class="kwbar" id="kwunused">' + unusedHTML() + '</div>'
+  + '<datalist id="series-list">' + SERIES.map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join('') + '</datalist>'
   + '<div class="entries">' + state.jobs.map(jobHTML).join('') + '</div>'
   + '<div class="toolbar"><button type="button" class="btn quiet" data-act="addJob">Add a job</button><button type="button" class="btn quiet" data-act="sortJobs">Sort newest first</button></div>'
   + navHTML() + '</div>';
@@ -884,14 +1012,15 @@ function stepExperience(){
 function eduHTML(e, i){
   const p = 'edu.' + i, probs = eduProblems(e), empty = eduEmpty(e), tag = tagFor(probs, empty);
   const open = ui.open[e.id] !== undefined ? ui.open[e.id] : true;
-  return '<details class="entry" data-entry="' + e.id + '" data-kind="edu"' + (open ? ' open' : '') + '><summary><span class="entry-num">' + (i + 1) + '</span><span class="entry-title" data-etitle>' + esc(e.school || 'New school') + '<small>' + esc(joinNE(', ', e.degree, e.major)) + '</small></span><span class="tag ' + tag[0] + '" data-etag>' + tag[1] + '</span></summary><div class="entry-body">'
+  return '<details class="entry" data-entry="' + e.id + '" data-kind="edu"' + (open ? ' open' : '') + '><summary><span class="entry-num">' + (i + 1) + '</span><span class="entry-title" data-etitle>' + esc(e.school || 'New school') + '<small>' + esc(joinNE(', ', degreeOf(e), e.major)) + '</small></span><span class="tag ' + tag[0] + '" data-etag>' + tag[1] + '</span></summary><div class="entry-body">'
   + tf({path:p + '.school', label:'What school did you attend?', ph:'University of Central Florida'})
-  + '<div class="row">' + tf({path:p + '.city', label:'City (optional)', ph:'Orlando'}) + tf({path:p + '.state', label:'State (optional)', ph:'FL'}) + '</div>'
-  + tf({path:p + '.degree', label:'What degree or diploma?', ph:'Bachelor of Science', attrs:'list="degree-list"'})
+  + '<div class="row">' + tf({path:p + '.city', label:'City (optional)', ph:'Orlando'}) + sel({path:p + '.state', label:'State (optional)', opts:STATE_OPTS}) + '</div>'
+  + sel({path:p + '.degreeSel', label:'What degree or diploma?', rerender:true, opts:[['','Choose one']].concat(DEGREES.map(d => [d, d]), [['other','Something else (type it)']])})
+  + (e.degreeSel === 'other' ? tf({path:p + '.degree', label:'Type the degree name', hint:'Write it the way your diploma or transcript does.', ph:'Bachelor of Science in Engineering'}) : '')
   + tf({path:p + '.major', label:'Major or field of study', ph:'Aerospace Engineering'})
   + myField('When did you finish?', p + '.compM', p + '.compY')
   + cb({path:p + '.expected', label:'Not finished yet (this is my expected date)'})
-  + '<div class="row">' + tf({path:p + '.gpa', label:'GPA (optional)', ph:'3.6', attrs:'inputmode="decimal"'}) + tf({path:p + '.gpaScale', label:'Out of', ph:'4.0', attrs:'inputmode="decimal"'}) + '</div>'
+  + '<div class="row">' + tf({path:p + '.gpa', label:'GPA (optional)', ph:'3.6', attrs:'inputmode="decimal"'}) + sel({path:p + '.gpaScale', label:'Out of', opts:[['4.0','4.0'],['4.3','4.3'],['5.0','5.0'],['100','100']]}) + '</div>'
   + tf({path:p + '.coursework', area:true, rows:2, label:'Relevant coursework (optional)', hint:'Courses that match the announcement, separated by commas.'})
   + '<div class="entry-tools"><button type="button" class="btn quiet small" data-act="moveEdu" data-arg="' + e.id + '" data-arg2="-1"' + (i === 0 ? ' disabled' : '') + '>Move up</button><button type="button" class="btn quiet small" data-act="moveEdu" data-arg="' + e.id + '" data-arg2="1"' + (i === state.edu.length - 1 ? ' disabled' : '') + '>Move down</button><button type="button" class="btn quiet small danger" data-act="delEdu" data-arg="' + e.id + '">Remove school</button></div></div></details>';
 }
@@ -899,7 +1028,6 @@ function stepEducation(){
   return '<div class="step"><h2>Education</h2><p class="lede">If the announcement requires a degree or specific coursework, list it here and plan to upload transcripts when you apply.</p>'
   + cb({path:'opts.eduFirst', label:'Show education above experience'}) + '<p class="hint" style="margin-top:-14px;margin-bottom:22px">Common for students, recent graduates, and jobs you qualify for through education.</p>'
   + '<div class="entries">' + state.edu.map(eduHTML).join('') + '</div>'
-  + '<datalist id="degree-list"><option value="High school diploma"><option value="GED"><option value="Associate of Science"><option value="Associate of Applied Science"><option value="Bachelor of Science"><option value="Bachelor of Arts"><option value="Master of Science"><option value="Master of Engineering"><option value="Master of Business Administration"><option value="Doctor of Philosophy"></datalist>'
   + '<div class="toolbar"><button type="button" class="btn quiet" data-act="addEdu">Add a school</button></div>' + navHTML() + '</div>';
 }
 function stepCredentials(){
@@ -913,10 +1041,15 @@ function stepCredentials(){
 function stepExtras(){
   return '<div class="step"><h2>Skills and extras</h2><p class="lede">All optional. Only include what helps for this job; space is tight at two pages.</p>'
   + tf({path:'skills', area:true, rows:3, label:'Skills and tools', hint:'Software, equipment, and methods, separated by commas. Match the announcement\u2019s wording.', ph:'MATLAB, SolidWorks, technical writing, test planning'})
-  + tf({path:'languages', area:true, rows:2, label:'Languages', hint:'One per line with your level.', ph:'Spanish (professional working proficiency)'})
+  + '<h3>Languages</h3><p class="hint">Languages besides English. Pick a level and the builder writes the standard wording.</p><div class="entries">' + state.langs.map((l, i) => { const p = 'langs.' + i; return '<div class="entry flat"><div class="row">' + tf({path:p + '.name', label:'Language', ph:'Spanish', attrs:'list="lang-list"'}) + sel({path:p + '.level', label:'How well?', opts:LANG_LEVELS}) + '</div><div class="entry-tools"><button type="button" class="btn quiet small danger" data-act="delLang" data-arg="' + l.id + '">Remove</button></div></div>'; }).join('') + '</div>'
+  + '<div class="toolbar" style="margin-bottom:16px"><button type="button" class="btn quiet" data-act="addLang">Add a language</button></div>' + pa('pa-lang')
+  + '<datalist id="lang-list">' + LANGS.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>'
+  + '<h3>Availability</h3><p class="hint">Optional. Fill these in if the announcement asks or they help your case.</p>'
+  + '<div class="row">' + sel({path:'avail.schedule', label:'Work schedule', opts:[['','Leave off'],['full','Full-time'],['part','Part-time'],['either','Full-time or part-time']]}) + sel({path:'avail.relocate', label:'Relocation', opts:[['','Leave off'],['yes','Willing to relocate']]}) + sel({path:'avail.travel', label:'Travel', opts:[['','Leave off'],['25','Up to 25% of the time'],['50','Up to 50% of the time'],['75','75% or more']]}) + '</div>' + pa('pa-avail')
+  + '<h3>More</h3>'
   + tf({path:'awards', area:true, rows:3, label:'Awards and honors', hint:'One per line, with the year.'})
   + tf({path:'pubs', area:true, rows:3, label:'Publications and presentations', hint:'One per line: title, where it appeared, and year.'})
-  + tf({path:'additional', area:true, rows:3, label:'Anything else the announcement asks you to include', hint:'For example availability or willingness to travel.'})
+  + tf({path:'additional', area:true, rows:3, label:'Anything else the announcement asks you to include', hint:'For example a statement the announcement requires.'})
   + navHTML() + '</div>';
 }
 function pollRow(r, cls, call){
@@ -1014,10 +1147,21 @@ function refreshLive(){
     const tag = isEdu ? tagFor(eduProblems(item), eduEmpty(item)) : tagFor(jobProblems(item), jobEmpty(item));
     const t = d.querySelector('[data-etag]'); if (t){ t.className = 'tag ' + tag[0]; t.textContent = tag[1]; }
     const ti = d.querySelector('[data-etitle]');
-    if (ti){ ti.firstChild.nodeValue = isEdu ? (item.school || 'New school') : (item.title || 'New job'); ti.querySelector('small').textContent = isEdu ? joinNE(', ', item.degree, item.major) : item.employer; }
+    if (ti){ ti.firstChild.nodeValue = isEdu ? (item.school || 'New school') : (item.title || 'New job'); ti.querySelector('small').textContent = isEdu ? joinNE(', ', degreeOf(item), item.major) : item.employer; }
   });
   const kc = $('#kwchips'); if (kc) kc.innerHTML = chipsHTML(true);
   const ku = $('#kwunused'); if (ku) ku.innerHTML = unusedHTML();
+  const C0 = x => clean(x), OFF = 'Leaves this off your resume.';
+  const setPA = (id, txt, empty) => { const el = document.getElementById(id); if (!el) return; if (txt) el.innerHTML = 'Prints as: <b>' + esc(txt) + '</b>'; else el.textContent = empty; };
+  const c = state.contact;
+  setPA('pa-vet', vetText(c, C0) ? "Veterans' preference: " + vetText(c, C0) : '', OFF);
+  setPA('pa-cl', clearanceText(c, C0), OFF);
+  setPA('pa-fed', fedText(c, C0), OFF);
+  setPA('pa-lang', langText(state, C0), state.langs.length ? OFF : '');
+  setPA('pa-avail', availText(state.avail), OFF);
+  state.jobs.forEach(j => { if (j.kind === 'federal') setPA('pa-sg-' + j.id, seriesGrade(j) ? (C0(j.title) || 'Job title') + ', ' + seriesGrade(j) : '', ''); });
+  const hp = $('#pa-head');
+  if (hp){ const h = model(state, C0).head; hp.innerHTML = '<b>' + esc(h.name || 'Your Name') + '</b>' + h.lines.map(l => '<span>' + esc(l) + '</span>').join(''); }
   const sc = $('#sumcount'); if (sc){ const w = words(state.summary); sc.textContent = w + (w === 1 ? ' word' : ' words') + (w > 90 ? '. Consider trimming to save space.' : ''); }
 }
 function autogrow(el){ if (!el.offsetParent) return; el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
@@ -1125,6 +1269,8 @@ const ACTIONS = {
   moveEdu: (id, dir) => { if (moveIn(state.edu, id, +dir)){ changed(); renderStep(); } },
   addCert: () => { state.certs.push(blankCert()); changed(); renderStep(); focusSoon('#' + fid('certs.' + (state.certs.length - 1) + '.name')); },
   delCert: (id, a2, a3, btn) => armed(btn, () => { state.certs = state.certs.filter(x => x.id !== id); changed(); renderStep(); }),
+  addLang: () => { state.langs.push(blankLang()); changed(); renderStep(); focusSoon('#' + fid('langs.' + (state.langs.length - 1) + '.name')); },
+  delLang: (id, a2, a3, btn) => armed(btn, () => { state.langs = state.langs.filter(x => x.id !== id); changed(); renderStep(); }),
   addTrain: () => { state.training.push(blankTrain()); changed(); renderStep(); focusSoon('#' + fid('training.' + (state.training.length - 1) + '.name')); },
   delTrain: (id, a2, a3, btn) => armed(btn, () => { state.training = state.training.filter(x => x.id !== id); changed(); renderStep(); }),
   kwRemove: kw => { const t = state.target, l = kw.toLowerCase(); const ai = t.kwAdded.findIndex(k => k.toLowerCase() === l); if (ai >= 0) t.kwAdded.splice(ai, 1); else t.kwRemoved.push(kw); changed(); renderStep(); },
