@@ -98,6 +98,20 @@ fieldset[disabled]{opacity:.5}
 .printas:empty{display:none}
 .fs .printas{margin-top:12px}
 .docs{margin:-12px 0 14px}
+details.explain{margin:-8px 0 20px;border:1px solid var(--rule);border-radius:8px;padding:10px 14px;background:var(--surface);max-width:62ch}
+details.explain>summary{cursor:pointer;font-weight:650;color:var(--signal)}
+details.explain[open]>summary{margin-bottom:8px}
+details.explain p,details.explain li{font-size:.9375rem}
+details.explain p{margin:0 0 8px}
+details.explain ul{padding-left:20px;margin:6px 0 10px}
+details.explain li{margin:5px 0}
+.suggest{margin:-8px 0 20px;max-width:62ch}
+.suggest .q{font-size:.9375rem}
+.suggest-list{display:grid;gap:8px}
+.suggest-list button{text-align:left;display:block;width:100%;border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:44px}
+.suggest-list button:hover{background:var(--rule-2)}
+.suggest-list b{display:block;font-weight:650}
+.suggest-list span{font-size:.875rem;color:var(--ink-2)}
 .fs .check{margin:0 0 10px}
 .headprev{margin:30px 0 24px}
 .headprev-box{background:#fff;color:#000;border:1px solid var(--rule);border-radius:4px;padding:16px 18px;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.45;box-shadow:var(--shadow);overflow-wrap:anywhere}
@@ -439,7 +453,7 @@ function seriesGrade(j){
 function jobProblems(j){
   const p = [];
   if (!j.title.trim()) p.push('add the job title');
-  if (!j.employer.trim()) p.push(j.kind === 'military' ? 'add the branch and unit' : 'add the employer');
+  if (!j.employer.trim()) p.push(isMil(j.kind) ? 'add the branch and unit' : 'add the employer');
   const hasStart = j.startM && j.startY, hasEnd = j.endM && j.endY;
   if (!hasStart) p.push('add the start month and year');
   if (!j.current && !hasEnd) p.push('add the end month and year, or check "I still work here"');
@@ -482,9 +496,11 @@ function fmtSalary(s){
   if (!isFinite(n) || !/^\$?\s*[\d,]+(\.\d+)?$/.test(String(s).trim())) return s;
   return '$' + n.toLocaleString('en-US', {maximumFractionDigits: 2});
 }
+const isMil = k => k === 'military' || k === 'guard';
 const KIND_HINT = {
   federal: 'Federal civilian jobs must show pay plan, series, and grade. You will find them on your SF-50 (blocks 16 to 18).',
   military: 'Active-duty service is not federal civilian experience, so it has no series or grade. Describe your duties in plain, civilian terms.',
+  guard: 'Guard and Reserve service counts as experience. For drill status, give your average hours: one weekend a month plus two weeks a year works out to about 5 hours a week. List a long mobilization or deployment as its own entry at full-time hours. Dual-status technician jobs are federal civilian jobs, so list those as \u201cFederal civilian job\u201d with a series and grade.',
   contractor: 'Contractor work is not federal experience. List the company that employed you, and name the agency you supported in your lines.',
   volunteer: 'Volunteer work counts when it shows you can do this job. Give your real average hours per week.'
 };
@@ -538,7 +554,7 @@ function model(st, C){
 
   const exp = {title:'Work Experience', items: st.jobs.filter(j => !jobEmpty(j)).map(j => {
     let title = C(j.title) || 'Job title';
-    if (j.kind === 'military' && C(j.rank)) title += ' (' + C(j.rank) + ')';
+    if (isMil(j.kind) && C(j.rank)) title += ' (' + C(j.rank) + ')';
     if (j.kind === 'federal' && seriesGrade(j)) title += ', ' + seriesGrade(j);
     if (j.kind === 'volunteer' && !/volunteer/i.test(title)) title += ' (Volunteer)';
     const emp = joinNE(', ', C(j.employer), C(j.city), C(stateOut(j.state)));
@@ -807,6 +823,9 @@ function runChecks(L){
   const acr = [...new Set((body.match(/\b[A-Z][A-Z0-9&]{1,6}s?\b/g) || []).map(a => a.replace(/s$/, '')))].filter(a => !KNOWN_ACR.has(a) && !/^\d/.test(a) && !new RegExp('\\(' + a.replace(/[&]/g, '\\&') + 's?\\)').test(body));
   if (acr.length) adv.push({label:'Acronyms', details:['Spell these out the first time, then put the acronym in parentheses: ' + acr.slice(0, 10).join(', ') + (acr.length > 10 ? ', and more' : '') + '. USAJOBS asks for plain language.'], step:3});
   if (/\b(date of birth|DOB|birth ?date|marital status)\b/i.test(all) || /\bage[:\s]+\d{2}\b/i.test(all)) adv.push({label:'Personal details', details:['It looks like you mentioned your birth date, age, or marital status. Leave personal details off.'], step:null});
+  const stx = clean(s.contact.status);
+  if (stx.length > 110) adv.push({label:'Extra line at the top', details:['Your \u201cother eligibility\u201d entry is long. Keep it to short labels; details belong in your experience.'], step:1});
+  if (/Portfolio:\s*($|;)/i.test(stx)) adv.push({label:'Portfolio link', details:['You added \u201cPortfolio:\u201d without an address. Type the link after it or remove it.'], step:1});
   if (L.bad.size){
     const shown = [...L.bad].filter(ch => !/[\uFE00-\uFE0F\u200B-\u200F]/.test(ch)).slice(0, 12).join(' ');
     adv.push({label:'Unprintable characters', details:['These characters can\u2019t print in a standard PDF, so they were left out: ' + (shown || '(invisible characters)') + '. Replace them with plain text.'], step:null});
@@ -939,7 +958,17 @@ function contactExtras(){
   const poly = c.clLevel === 'ts' || c.clLevel === 'tssci';
   return '<h3>Veterans\u2019 preference</h3>'
   + sel({path:'contact.vetCode', label:'Are you claiming veterans\u2019 preference?', rerender:true, opts:vetOpts, hint:'Pick the one that fits. Your resume shows the official category.'})
-  + (v ? '<p class="hint docs"><b>Upload when you apply:</b> ' + esc(v.docs) + ' Still on active duty? If you\u2019ll separate within 120 days, a statement of service from your unit can stand in for the DD-214.</p>' : '')
+  + (v ? '<p class="hint docs"><b>Upload when you apply:</b> ' + esc(v.docs) + ' Still on active duty? If you\u2019ll be discharged or released from active duty within 120 days, a signed certification from your unit can stand in for the DD-214.</p>' : '')
+  + '<details class="explain" data-explain="guard"' + (ui.explain ? ' open' : '') + '><summary>National Guard or Reserve? Here\u2019s what counts</summary>'
+    + '<p>Guard and Reserve service qualifies for preference only in certain cases.</p><ul>'
+    + '<li><b>Doesn\u2019t count by itself:</b> drill weekends, annual training, and initial training such as basic and AIT.</li>'
+    + '<li><b>Can count:</b> federal active duty orders (Title 10), such as a mobilization or deployment, if you were released under honorable conditions and at least one of these is true:<ul>'
+    + '<li>You earned a campaign or expeditionary medal, such as the Afghanistan, Iraq, or Inherent Resolve Campaign Medal or the GWOT Expeditionary Medal. The GWOT Service Medal and National Defense Service Medal don\u2019t count.</li>'
+    + '<li>You served more than 180 days in a row, and part of it fell between Sept. 11, 2001, and Aug. 31, 2010.</li>'
+    + '<li>You served on active duty any time from Aug. 2, 1990, through Jan. 2, 1992.</li></ul>Generally, you also need to have completed the full period of your orders.</li>'
+    + '<li><b>Service-connected disability:</b> if the VA rated a disability as service-connected, even one from training, you may qualify for 10-point preference.</li>'
+    + '<li><b>Proof:</b> the DD-214 from that active duty period. You can still be serving in the Guard or Reserve.</li></ul>'
+    + '<p>Not sure? Pick the closest option and ask the HR contact listed on the announcement. The agency makes the final call.</p></details>'
   + pa('pa-vet')
   + '<h3>Security clearance</h3>'
   + sel({path:'contact.clLevel', label:'Do you hold a clearance?', rerender:true, opts:[['','No clearance'],['confidential','Confidential'],['secret','Secret'],['ts','Top Secret'],['tssci','Top Secret/SCI'],['q','DOE Q'],['l','DOE L'],['ptmod','Public Trust, Moderate Risk (not a clearance)'],['pthigh','Public Trust, High Risk (not a clearance)'],['other','Something else (type it)']], hint:'Level and status only. Never include classified details.'})
@@ -951,7 +980,14 @@ function contactExtras(){
   + sel({path:'contact.fedEmp', label:'Have you worked as a federal civilian employee?', rerender:true, hint:'Military service doesn\u2019t count here; it goes under Experience.', opts:[['','No'],['current','Yes, I work for the federal government now'],['former','Yes, in the past']]})
   + (c.fedEmp ? '<div class="row">' + sel({path:'contact.fedTenure', label:'Appointment type', opts:[['','Not sure, or leave it off'],['career','Career (tenure 1)'],['conditional','Career-conditional (tenure 2)'],['excepted','Excepted service']]}) + tf({path:'contact.fedGrade', label: c.fedEmp === 'current' ? 'Current grade' : 'Highest grade held', ph:'GS-0861-11'}) + '</div><p class="hint" style="margin-top:-12px;margin-bottom:20px">Tenure is in block 24 of your SF-50.' + (c.fedEmp === 'former' ? ' Career employees can be reinstated at any time; career-conditional employees, within 3 years of leaving.' : '') + '</p>' : '')
   + '<fieldset class="fs"><legend class="q">Do any of these apply? (optional)</legend><p class="hint">Check all that fit.</p>' + PATHS.map(x => cb({path:'contact.' + x[0], label:esc(x[1])})).join('') + '</fieldset>'
-  + tf({path:'contact.status', label:'Anything else for the top of your resume? (optional)', hint:'Short and factual, like a hiring path the announcement names.'})
+  + tf({path:'contact.status', label:'Any other eligibility to show at the top? (optional)', hint:'Most people leave this blank. Use it only for an eligibility that isn\u2019t covered above and that the announcement mentions, usually under \u201cThis job is open to\u201d or \u201cWho may apply.\u201d Job goals, skills, and personal details don\u2019t go here.'})
+  + '<div class="suggest"><p class="q">Common examples (tap to add)</p><div class="suggest-list">'
+    + [['Schedule A eligible','You have a Schedule A letter for the disability hiring path. Upload it when you apply.'],
+       ['CTAP/ICTAP eligible','You\u2019re a federal employee who was displaced or declared surplus. Upload your separation or surplus notice.'],
+       ['VEOA eligible','You\u2019re a veteran applying through the Veterans Employment Opportunities Act. The announcement will name it if it applies.'],
+       ['Portfolio: ','A link to your work samples or website. Type the address after it.']]
+      .map(x => '<button type="button" data-act="addStatus" data-arg="' + esc(x[0]) + '"><b>' + esc(x[0].replace(/:\s*$/, ' link')) + '</b><span>' + esc(x[1]) + '</span></button>').join('')
+    + '</div></div>'
   + pa('pa-fed')
   + '<div class="headprev"><p class="q">How the top of your resume reads</p><div class="headprev-box" id="pa-head"></div></div>';
 }
@@ -971,15 +1007,15 @@ function tagFor(probs, empty){ return empty ? ['', 'Not started'] : probs.length
 function jobHTML(j, i){
   const p = 'jobs.' + i, probs = jobProblems(j), empty = jobEmpty(j), tag = tagFor(probs, empty);
   const open = ui.open[j.id] !== undefined ? ui.open[j.id] : (empty || i === 0);
-  const empPh = {military:'U.S. Army, 3rd Infantry Division', contractor:'Company name (contractor to NASA)', federal:'NASA Johnson Space Center', volunteer:'Organization name', civilian:'Company or organization name'}[j.kind];
-  const titlePh = {military:'Unit Supply Specialist', volunteer:'Volunteer Tutor', federal:'Program Analyst'}[j.kind] || 'Engineering Technician';
+  const empPh = {military:'U.S. Army, 3rd Infantry Division', guard:'Texas Army National Guard, 1st Battalion', contractor:'Company name (contractor to NASA)', federal:'NASA Johnson Space Center', volunteer:'Organization name', civilian:'Company or organization name'}[j.kind];
+  const titlePh = {military:'Unit Supply Specialist', guard:'Combat Medic Specialist', volunteer:'Volunteer Tutor', federal:'Program Analyst'}[j.kind] || 'Engineering Technician';
   const bullets = j.bullets.map((b, k) => '<div class="bullet-row"><span class="bullet-mark" aria-hidden="true">•</span><textarea rows="2" data-path="' + p + '.bullets.' + k + '" aria-label="Accomplishment ' + (k + 1) + '" placeholder="' + (k === 0 ? 'Example: Cut test-stand setup time 30% by writing a standard checklist for a 6-person crew.' : '') + '" spellcheck="true">' + esc(b) + '</textarea><div class="bullet-tools"><button type="button" class="iconbtn" data-act="moveBullet" data-arg="' + j.id + '" data-arg2="' + k + '" data-arg3="-1" aria-label="Move line ' + (k + 1) + ' up"' + (k === 0 ? ' disabled' : '') + '>↑</button><button type="button" class="iconbtn" data-act="moveBullet" data-arg="' + j.id + '" data-arg2="' + k + '" data-arg3="1" aria-label="Move line ' + (k + 1) + ' down"' + (k === j.bullets.length - 1 ? ' disabled' : '') + '>↓</button><button type="button" class="iconbtn" data-act="delBullet" data-arg="' + j.id + '" data-arg2="' + k + '" aria-label="Remove line ' + (k + 1) + '">×</button></div></div>').join('');
   return '<details class="entry" data-entry="' + j.id + '"' + (open ? ' open' : '') + '><summary><span class="entry-num">' + (i + 1) + '</span><span class="entry-title" data-etitle>' + esc(j.title || 'New job') + '<small>' + esc(j.employer) + '</small></span><span class="tag ' + tag[0] + '" data-etag>' + tag[1] + '</span></summary><div class="entry-body">'
-  + sel({path:p + '.kind', label:'What kind of position was this?', rerender:true, opts:[['civilian','Private sector, nonprofit, or state/local government'],['federal','Federal civilian job (GS, WG, and so on)'],['military','Military service'],['contractor','Federal contractor'],['volunteer','Volunteer']]})
+  + sel({path:p + '.kind', label:'What kind of position was this?', rerender:true, opts:[['civilian','Private sector, nonprofit, or state/local government'],['federal','Federal civilian job (GS, WG, and so on)'],['military','Military service (active duty)'],['guard','National Guard or Reserve'],['contractor','Federal contractor'],['volunteer','Volunteer']]})
   + (KIND_HINT[j.kind] ? '<p class="hint kindhint">' + KIND_HINT[j.kind] + '</p>' : '')
   + tf({path:p + '.title', label:'What was your official job title?', hint:'Use the title from your paperwork. If it isn\u2019t self-explanatory, add a plain version in parentheses.', ph:titlePh})
-  + (j.kind === 'military' ? tf({path:p + '.rank', label:'Rank (optional)', ph:'SGT / E-5', cls:'narrow'}) : '')
-  + tf({path:p + '.employer', label: j.kind === 'military' ? 'Branch and unit' : 'Who was the employer?', ph:empPh})
+  + (isMil(j.kind) ? tf({path:p + '.rank', label:'Rank (optional)', ph:'SGT / E-5', cls:'narrow'}) : '')
+  + tf({path:p + '.employer', label: isMil(j.kind) ? 'Branch and unit' : 'Who was the employer?', ph:empPh})
   + '<div class="row">' + tf({path:p + '.city', label:'City', ph:'Houston'}) + sel({path:p + '.state', label:'State', opts:STATE_OPTS}) + '</div>'
   + (j.kind === 'federal' ? '<fieldset class="fs"><legend class="q">Pay plan, series, and grade</legend><div class="row3">'
     + '<div><label for="' + fid(p + '.payPlan') + '">Pay plan</label><select id="' + fid(p + '.payPlan') + '" data-path="' + p + '.payPlan" data-rerender>' + optList(PAY_PLANS, j.payPlan) + '</select></div>'
@@ -1002,7 +1038,7 @@ function jobHTML(j, i){
   + '</div></details>';
 }
 function stepExperience(){
-  return '<div class="step"><h2>Experience</h2><p class="lede">Add each job that relates to this announcement, newest first. Volunteer work and military service count. Every entry needs dates, hours per week, and what you accomplished.</p>'
+  return '<div class="step"><h2>Experience</h2><p class="lede">Add each job that relates to this announcement, newest first. Volunteer work and military service, including the Guard and Reserve, count. Every entry needs dates, hours per week, and what you accomplished.</p>'
   + '<div class="kwbar" id="kwunused">' + unusedHTML() + '</div>'
   + '<datalist id="series-list">' + SERIES.map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join('') + '</datalist>'
   + '<div class="entries">' + state.jobs.map(jobHTML).join('') + '</div>'
@@ -1269,6 +1305,14 @@ const ACTIONS = {
   moveEdu: (id, dir) => { if (moveIn(state.edu, id, +dir)){ changed(); renderStep(); } },
   addCert: () => { state.certs.push(blankCert()); changed(); renderStep(); focusSoon('#' + fid('certs.' + (state.certs.length - 1) + '.name')); },
   delCert: (id, a2, a3, btn) => armed(btn, () => { state.certs = state.certs.filter(x => x.id !== id); changed(); renderStep(); }),
+  addStatus: v => {
+    const c = state.contact, cur = c.status.trim();
+    if (v.trim() !== 'Portfolio:' && cur.toLowerCase().includes(v.trim().toLowerCase())){ toast('Already added'); return; }
+    c.status = cur ? cur + '; ' + v : v;
+    const el = $('#f-contact-status');
+    if (el){ el.value = c.status; el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    changed();
+  },
   addLang: () => { state.langs.push(blankLang()); changed(); renderStep(); focusSoon('#' + fid('langs.' + (state.langs.length - 1) + '.name')); },
   delLang: (id, a2, a3, btn) => armed(btn, () => { state.langs = state.langs.filter(x => x.id !== id); changed(); renderStep(); }),
   addTrain: () => { state.training.push(blankTrain()); changed(); renderStep(); focusSoon('#' + fid('training.' + (state.training.length - 1) + '.name')); },
@@ -1320,6 +1364,7 @@ form.addEventListener('toggle', e => {
   if (d.matches('details[data-entry]')) ui.open[d.dataset.entry] = d.open;
   else if (d.matches('details[data-builder]')) ui.builder[d.dataset.builder] = d.open;
   else if (d.matches('details[data-opt]')) ui.opt[d.dataset.opt] = d.open;
+  else if (d.matches('details[data-explain]')) ui.explain = d.open;
   if (d.open) d.querySelectorAll('textarea:not([readonly])').forEach(autogrow);
 }, true);
 document.addEventListener('click', e => {
